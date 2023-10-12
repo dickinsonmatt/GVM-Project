@@ -5,26 +5,17 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
+```{r qualtrics API include = FALSE}
+library(qualtRics)
+
+qualtrics_api_credentials(api_key = "<YOUR-QUALTRICS_API_KEY>", 
+                          base_url = "iad1.qualtrics.com",
+                          install = TRUE)
+```
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
-
-
-
-#this is a test message - foster
-
-
-```{r importing}
-library(tidyverse)
-data(iris)
-```
-
-```{r table}
-iris |>
-  group_by(Species) |>
-  summarize(n = n(),
-            mean_petal_length = mean(Petal.Length)
-            )
 ```
 
 
