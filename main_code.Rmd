@@ -17,7 +17,7 @@ library(readr)
 ```{r data import}
 # data_import <- read_csv()
 
-# data_dict <- read_csv()
+data_dict <- read_csv("Data Dictionary for GVM survey - Sheet1.csv")
 ```
 
 ```{r}
