@@ -9,22 +9,22 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
-
-#this is a test message - foster
-
-
-```{r importing}
+```{r packages}
 library(tidyverse)
-data(iris)
+library(readr)
 ```
 
-```{r table}
-iris |>
-  group_by(Species) |>
-  summarize(n = n(),
-            mean_petal_length = mean(Petal.Length)
-            )
+```{r data import}
+# data_import <- read_csv()
+
+data_dict <- read_csv("Data Dictionary for GVM survey - Sheet1.csv")
 ```
+
+```{r}
+# colnames(data_import) <- data_dict$variable_name
+
+# head(data_import)
+```
+
 
 
