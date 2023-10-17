@@ -20,11 +20,12 @@ library(readr)
 data_dict <- read_csv("Data Dictionary for GVM survey - Sheet1.csv")
 ```
 
-```{r}
+```{r renaming columns}
 # colnames(data_import) <- data_dict$variable_name
 
 # head(data_import)
-```
 
+# gvm_clean <- data_import
+```
 
 
