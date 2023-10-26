@@ -9,23 +9,63 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r packages}
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(readr)
+library(flextable)
 ```
 
 ```{r data import}
-# data_import <- read_csv()
+data_import <- read_csv("STA 419 GV Magazine Survey.csv")
 
-data_dict <- read_csv("Data Dictionary for GVM survey - Sheet1.csv")
+data_dict <- read_csv("Data Dictionary for GVM survey - Final.csv")
 ```
 
 ```{r renaming columns}
-# colnames(data_import) <- data_dict$variable_name
+gvm_main <- data_import |>
+  select(12:62) |>
+  slice(c(-1,-2))
 
-# head(data_import)
-
-# gvm_clean <- data_import
+colnames(gvm_main) <- data_dict$variable_name
 ```
 
+* columns (likert) to numeric
+* where_read to categorize
+* num issues: 1,2,6,7 (0, 1, 2, 3)
+* gvsu_engagment to category
+* age to be actual categorize
+* num_articles change 'NOT_APPLICABLE' to "more than 10"
+* drive to website category
+* website_only to yes/no
+* website_engagment to category
+
+
+```{r cleaning columns}
+gvm_clean <- gvm_main |>
+  select(-1, -51) |>
+  mutate(
+    where_read = case_when(
+      where_read == "1" ~ "GVM Website",
+      where_read == "2" ~ "Print issues",
+      where_read == "3" ~ "Both",
+      TRUE ~ "I don't read the GVM"),
+    num_issues = as.numeric(case_when(
+      num_issues == "1" ~ 0,
+      num_issues == "2" ~ 2,
+      num_issues == "6" ~ 3,
+      TRUE ~ 1)),
+    gvsu_engagement = case_when(
+      gvsu_engagement == "1" ~ "Disagree",
+      gvsu_engagement == "2" ~ "Neutral",
+      TRUE ~ "Agree"),
+    age = case_when(
+      age == "1" ~ "17-24",
+      age == "2" ~ "25-35",
+      age == "3" ~ "36-49",
+      age == "4" ~ "50-65",
+      TRUE ~ "66+"
+    ))
+
+gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
+```
 
