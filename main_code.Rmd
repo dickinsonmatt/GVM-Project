@@ -69,11 +69,3 @@ gvm_clean <- gvm_main |>
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
 
-
-```{r include = FALSE}
-data_import |>
-  select(5, 36) |>
-  arrange(36) |>
-  flextable()
-```
-
