@@ -4,12 +4,29 @@ Q1,Where do you acquire most your information about GVSU? Mark all that apply,mo
 Q2,How do you read Grand Valley Magazine?,where_read,factor,both
 Q3,How many PRINT issues have you read within the past year?,num_issues,numeric,print
 Q4,To what extent do you agree or disagree with these statements about the Grand Valley Magazine WEBSITE?,website_likert,numeric,website
+Q4_1,I enjoy reading the GVM website.,enjoy_website_likert,numeric,website
+Q4_2,The website is easy to navigate.,navigate_website_likert,numeric,website
+Q4_3,The design and visual elements aid in my understanding and enjoyment of the text.,design_website_likert,numeric,website
+Q4_4,"I feel more connected to Grand Valley State University after reading the GVM website.
+",connected_website_likert,numeric,website
+Q4_5,"Reading the GVM website makes me proud to be part of the GVSU community.
+",proud_website_likert,numeric,website
 Q5,To what extent do you agree or disagree with these statements about PRINTED issues of the Grand Valley Magazine?,print_likert,numeric,print
+Q5_1,"I enjoy reading the printed publication.
+",enjoy_print_likert,numeric,print
+Q5_2,"The design and visual elements aid in my understanding and enjoyment of the text.
+",design_print_likert,numeric,print
+Q5_3,"I feel more connected to Grand Valley State University after the print issues.
+",connected_print_likert,numeric,print
+Q5_4,"Reading print issues of Grand Valley Magazine makes me proud to be part of the GVSU community.
+",proud_print_likert,numeric,print
 Q6,After reading Grand Valley Magazine I am more likely to engage in events/activities associated with GVSU.,gvsu_engagement,factor/numeric,both
-Q7,How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?,num_articles,numeric,website
+"Q7_1
+",How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?,num_articles,numeric,website
 Q8,What is most likely to drive you to visit the Grand Valley Magazine WEBSITE?,drive_to_website,character,website
 Q9,Would you read the Grand Valley Magazine if it was offered as a WEBSITE version only?,website_only,factor,website
 Q10,How can we make the Grand Valley Magazine WEBSITE more engaging?,website_engagment,character,website
+"Q10_7_TEXT",How can we make the Grand Valley Magazine WEBSITE more engaging?,website_engagment_text,character,website
 Q11,What actions have you taken as a result of reading Grand Valley Magazine? Mark all that apply,actions_taken,character,both
 Q12,Would you like to opt in to continue to receive PRINTED issues of the Grand Valley Magazine?,opting,factor,print
 Q13,Do you have any other comments?,comments,character,both

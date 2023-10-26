@@ -9,21 +9,25 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r packages}
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(readr)
 ```
 
 ```{r data import}
-# data_import <- read_csv()
+data_import <- read_csv("STA 419 GV Magazine Survey.csv")
 
-data_dict <- read_csv("Data Dictionary for GVM survey - Sheet1.csv")
+data_dict <- read_csv("Data Dictionary for GVM survey - Final.csv")
 ```
 
-```{r}
-# colnames(data_import) <- data_dict$variable_name
+```{r renaming columns}
+gvm_main <- data_import |>
+  select(12:62) |>
+  slice(c(-1,-2))
 
-# head(data_import)
+colnames(gvm_main) <- data_dict$variable_name
+
+# gvm_clean <- data_import
 ```
 
 
