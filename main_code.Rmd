@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r packages, include = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(readr)
+library(flextable)
 ```
 
 ```{r data import}
@@ -41,7 +42,7 @@ colnames(gvm_main) <- data_dict$variable_name
 
 ```{r cleaning columns}
 gvm_clean <- gvm_main |>
-  select(-1) |>
+  select(-1, -51) |>
   mutate(
     where_read = case_when(
       where_read == "1" ~ "GVM Website",
@@ -50,16 +51,29 @@ gvm_clean <- gvm_main |>
       TRUE ~ "I don't read the GVM"),
     num_issues = as.numeric(case_when(
       num_issues == "1" ~ 0,
-      num_issues == "2" ~ 1,
-      num_issues == "6" ~ 2,
-      TRUE ~ 3)),
+      num_issues == "2" ~ 2,
+      num_issues == "6" ~ 3,
+      TRUE ~ 1)),
     gvsu_engagement = case_when(
       gvsu_engagement == "1" ~ "Disagree",
       gvsu_engagement == "2" ~ "Neutral",
-      TRUE ~ "Agree")
-    )
+      TRUE ~ "Agree"),
+    age = case_when(
+      age == "1" ~ "17-24",
+      age == "2" ~ "25-35",
+      age == "3" ~ "36-49",
+      age == "4" ~ "50-65",
+      TRUE ~ "66+"
+    ))
 
-type.convert(gvm_clean, as.is = TRUE)
+gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
+```
 
+
+```{r include = FALSE}
+data_import |>
+  select(5, 36) |>
+  arrange(36) |>
+  flextable()
 ```
 
