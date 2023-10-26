@@ -66,9 +66,36 @@ gvm_clean <- gvm_main |>
       TRUE ~ "66+"
     ))
 
-gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
+
 ```
 
+
+```{r}
+gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
+                                'NOT_APPLICABLE' = '10+'))
+gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
+                                '1' = 'Yes',
+                                '2' = "I don't know/I'm not sure", 
+                                '3' = "No"))
+
+gvm_clean <- gvm_clean %>% mutate(website_engagment=recode(website_engagment,
+                                '1' = 'Larger variety of content', 
+                                '2' = 'Easier navigation',
+                                '3' = 'It is currently engaging',
+                                '8' = 'More specific recommendations',
+                                '4' = "I don't know/I'm not sure",
+                                '5' = "I don't use the website", 
+                                '7' = 'Other'))
+
+gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
+                                '1' = 'Word of Mouth', 
+                                '2' = 'Email',
+                                '3' = 'Social Media',
+                                '4' = 'Link within printed Issue'
+                                 ))
+                                 
+gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
+```
 
 
 
