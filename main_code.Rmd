@@ -26,7 +26,40 @@ gvm_main <- data_import |>
   slice(c(-1,-2))
 
 colnames(gvm_main) <- data_dict$variable_name
+```
 
-# gvm_clean <- data_import
+* columns (likert) to numeric
+* where_read to categorize
+* num issues: 1,2,6,7 (0, 1, 2, 3)
+* gvsu_engagment to category
+* age to be actual categorize
+* num_articles change 'NOT_APPLICABLE' to "more than 10"
+* drive to website category
+* website_only to yes/no
+* website_engagment to category
+
+
+```{r cleaning columns}
+gvm_clean <- gvm_main |>
+  select(-1) |>
+  mutate(
+    where_read = case_when(
+      where_read == "1" ~ "GVM Website",
+      where_read == "2" ~ "Print issues",
+      where_read == "3" ~ "Both",
+      TRUE ~ "I don't read the GVM"),
+    num_issues = as.numeric(case_when(
+      num_issues == "1" ~ 0,
+      num_issues == "2" ~ 1,
+      num_issues == "6" ~ 2,
+      TRUE ~ 3)),
+    gvsu_engagement = case_when(
+      gvsu_engagement == "1" ~ "Disagree",
+      gvsu_engagement == "2" ~ "Neutral",
+      TRUE ~ "Agree")
+    )
+
+type.convert(gvm_clean, as.is = TRUE)
+
 ```
 
