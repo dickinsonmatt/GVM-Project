@@ -98,7 +98,54 @@ gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 
 
 
+```{r}
+write_csv(gvm_clean, "GVM_data.csv")
+```
 
 
+```{r}
+#Most Info df
+counts <-c(
+length(which(gvm_clean$most_info_gv_emails == 1)),
+length(which(gvm_clean$most_info_gvm_print == 1)),
+length(which(gvm_clean$most_info_gvm_website == 1)),
+length(which(gvm_clean$most_info_gv_publications == 1)),
+length(which(gvm_clean$most_info_media == 1)),
+length(which(gvm_clean$most_info_wordofmouth_alumni == 1)),
+length(which(gvm_clean$most_info_lanthorn == 1)),
+length(which(gvm_clean$most_info_socialmedia == 1)),
+length(which(gvm_clean$most_info_other == 1))
+)
 
+most_info_df <- data.frame(
+  answer = c("Emails from GVSU","Grand Valley Magazine Print Issues","Grand Valley Magazine Website","Other GVSU Publications","Local or National Media","Word of Mouth/Other Alumni","The Lanthorn","Social Media","Other"),
+  count = counts
+)
+```
+
+
+```{r frequency for action}
+# vector for column names
+action_cols <- gvm_clean |> select(starts_with("action")) |> colnames()
+
+# empty vector to store counts
+action_counts <- vector()
+
+# finding counts for each column name
+for (i in 1:length(action_cols)){
+  # print(gvm_clean[relation_cols[i]])
+  action_counts[i] = length(which(gvm_clean[action_cols[i]] == 1))
+}
+
+
+# storing information in df
+action_df <- data.frame(
+  action_cols,
+  action_counts
+)
+
+# cleaning names
+action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "action_", ""))
+
+```
 
