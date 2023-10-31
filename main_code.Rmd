@@ -29,6 +29,7 @@ gvm_main <- data_import |>
 colnames(gvm_main) <- data_dict$variable_name
 ```
 
+### Cleaning to do
 * columns (likert) to numeric
 * where_read to categorize
 * num issues: 1,2,6,7 (0, 1, 2, 3)
@@ -40,7 +41,7 @@ colnames(gvm_main) <- data_dict$variable_name
 * website_engagment to category
 
 
-```{r cleaning columns}
+```{r matthew cleaning columns}
 gvm_clean <- gvm_main |>
   select(-1, -51) |>
   mutate(
@@ -69,8 +70,7 @@ gvm_clean <- gvm_main |>
 
 ```
 
-
-```{r cleaning columns 2}
+```{r foster cleaning}
 gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
                                 'NOT_APPLICABLE' = '10+'))
 gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
@@ -96,12 +96,28 @@ gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
 
+```{r frequency for relation}
+# vector for column names
+relation_cols <- gvm_clean |> select(starts_with("relation")) |> colnames()
 
+# empty vector to store counts
+relation_counts <- vector()
 
-```{r}
-write_csv(gvm_clean, "GVM_data.csv")
+# finding counts for each column name
+for (i in 1:length(relation_cols)){
+  # print(gvm_clean[relation_cols[i]])
+  relation_counts[i] = length(which(gvm_clean[relation_cols[i]] == 1))
+}
+
+# storing information in df
+relation_df <- data.frame(
+  relation_cols,
+  relation_counts
+)
+
+# cleaning names
+relation_df <- relation_df |> mutate(relation_cols = str_replace_all(relation_cols, "relation_", ""))
 ```
-
 
 ```{r}
 #Most Info df
@@ -147,5 +163,9 @@ action_df <- data.frame(
 # cleaning names
 action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "action_", ""))
 
+```
+
+```{r exporting clean data}
+write_csv(gvm_clean, "GVM_data.csv")
 ```
 
