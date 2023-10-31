@@ -100,3 +100,7 @@ gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 
 
 
+```{r}
+write_csv(gvm_clean, "GVM_data.csv")
+```
+
