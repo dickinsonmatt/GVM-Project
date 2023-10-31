@@ -98,6 +98,28 @@ gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
 
+```{r frequency for relation}
+# vector for column names
+relation_cols <- gvm_clean |> select(starts_with("relation")) |> colnames()
+
+# empty vector to store counts
+relation_counts <- vector()
+
+# finding counts for each column name
+for (i in 1:length(relation_cols)){
+  # print(gvm_clean[relation_cols[i]])
+  relation_counts[i] = length(which(gvm_clean[relation_cols[i]] == 1))
+}
+
+# storing information in df
+relation_df <- data.frame(
+  relation_cols,
+  relation_counts
+)
+
+# cleaning names
+relation_df <- relation_df |> mutate(relation_cols = str_replace_all(relation_cols, "relation_", ""))
+```
 
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
