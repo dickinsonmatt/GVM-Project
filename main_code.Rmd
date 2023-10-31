@@ -70,7 +70,7 @@ gvm_clean <- gvm_main |>
 ```
 
 
-```{r}
+```{r cleaning columns 2}
 gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
                                 'NOT_APPLICABLE' = '10+'))
 gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
@@ -91,11 +91,13 @@ gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
                                 '1' = 'Word of Mouth', 
                                 '2' = 'Email',
                                 '3' = 'Social Media',
-                                '4' = 'Link within printed Issue'
-                                 ))
+                                '4' = 'Link within printed Issue'))
                                  
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
+
+
+
 
 
 
