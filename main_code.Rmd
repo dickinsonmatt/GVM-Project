@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 library(flextable)
+library(ggthemes)
 ```
 
 ```{r data import}
