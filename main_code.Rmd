@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 library(flextable)
+library(ggthemes)
 ```
 
 ```{r data import}
@@ -70,7 +71,6 @@ gvm_clean <- gvm_main |>
 
 ```
 
-
 ```{r foster cleaning}
 gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
                                 'NOT_APPLICABLE' = '10+'))
@@ -92,8 +92,7 @@ gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
                                 '1' = 'Word of Mouth', 
                                 '2' = 'Email',
                                 '3' = 'Social Media',
-                                '4' = 'Link within printed Issue'
-                                 ))
+                                '4' = 'Link within printed Issue'))
                                  
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
@@ -121,8 +120,107 @@ relation_df <- data.frame(
 relation_df <- relation_df |> mutate(relation_cols = str_replace_all(relation_cols, "relation_", ""))
 ```
 
+```{r frequency for most_info}
+#Most Info df
+counts <-c(
+length(which(gvm_clean$most_info_gv_emails == 1)),
+length(which(gvm_clean$most_info_gvm_print == 1)),
+length(which(gvm_clean$most_info_gvm_website == 1)),
+length(which(gvm_clean$most_info_gv_publications == 1)),
+length(which(gvm_clean$most_info_media == 1)),
+length(which(gvm_clean$most_info_wordofmouth_alumni == 1)),
+length(which(gvm_clean$most_info_lanthorn == 1)),
+length(which(gvm_clean$most_info_socialmedia == 1)),
+length(which(gvm_clean$most_info_other == 1))
+)
+
+most_info_df <- data.frame(
+  answer = c("Emails from GVSU","Grand Valley Magazine Print Issues","Grand Valley Magazine Website","Other GVSU Publications","Local or National Media","Word of Mouth/Other Alumni","The Lanthorn","Social Media","Other"),
+  count = counts
+)
+```
+
+
+```{r frequency for action}
+# vector for column names
+action_cols <- gvm_clean |> select(starts_with("action")) |> colnames()
+
+# empty vector to store counts
+action_counts <- vector()
+
+# finding counts for each column name
+for (i in 1:length(action_cols)){
+  # print(gvm_clean[relation_cols[i]])
+  action_counts[i] = length(which(gvm_clean[action_cols[i]] == 1))
+}
+
+
+# storing information in df
+action_df <- data.frame(
+  action_cols,
+  action_counts
+)
+
+# cleaning names
+action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "action_", ""))
+
+```
+
+```{r DEMO}
+# make age a factor because it will make using it as a variable easier
+gvm_clean$age <- as.factor(gvm_clean$age)
+
+# create new df for the data we want
+age_by_action <- gvm_clean |>
+  select(age, starts_with("action")) |> # grabbing the variables of interest
+  pivot_longer(!age, names_to = "action", values_to = "count") |> # pivoting
+  group_by(age, action) |> # grouping to make summarizing
+  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
+  mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
+         action = str_replace_all(action, "_", " "),
+         action = str_to_title(action))
+
+age_by_action |>
+  ggplot(aes(fct_reorder(action, desc(n)), n, fill = age)) + # grab variables and reorder action
+  geom_col()  +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = .6)) +
+  labs(
+    x = "Action",
+    y = "Number",
+    fill = "Age group",
+    title = "Actions taken by Age group"
+  ) +
+  scale_fill_viridis_d(direction = -1) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) # this line makes sure there is no gap between the bottom of the bars and the horizontal axis
+```
+
+```{r avid_reader}
+gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
+
+gvm_clean <- gvm_clean %>% mutate(avid_reader=recode(avid_reader,
+                                '0' = '0-4 Articles',
+                                '1' = '0-4 Articles',
+                                '2' = "0-4 Articles", 
+                                '3' = "0-4 Articles",
+                                '4' = "0-4 Articles",
+                                '5' = "5-10+",
+                                '6' = "5-10+",
+                                '7' = "5-10+",
+                                '8' = "5-10+",
+                                '9' = "5-10+",
+                                '10' = "5-10+",
+                                '10+' = "5-10+"))
+
+table(gvm_clean$avid_reader)
+```
+
+
+
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
 ```
+
+
 
 
