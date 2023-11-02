@@ -166,6 +166,7 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 
 
 ```
+
 ```{r DEMO}
 # make age a factor because it will make using it as a variable easier
 gvm_clean$age <- as.factor(gvm_clean$age)
@@ -194,6 +195,27 @@ age_by_action |>
   scale_fill_viridis_d(direction = -1) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) # this line makes sure there is no gap between the bottom of the bars and the horizontal axis
 ```
+
+```{r avid_reader}
+gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
+
+gvm_clean <- gvm_clean %>% mutate(avid_reader=recode(avid_reader,
+                                '0' = '0-4 Articles',
+                                '1' = '0-4 Articles',
+                                '2' = "0-4 Articles", 
+                                '3' = "0-4 Articles",
+                                '4' = "0-4 Articles",
+                                '5' = "5-10+",
+                                '6' = "5-10+",
+                                '7' = "5-10+",
+                                '8' = "5-10+",
+                                '9' = "5-10+",
+                                '10' = "5-10+",
+                                '10+' = "5-10+"))
+
+table(gvm_clean$avid_reader)
+```
+
 
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
