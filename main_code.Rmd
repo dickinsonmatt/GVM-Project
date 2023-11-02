@@ -120,7 +120,7 @@ relation_df <- data.frame(
 relation_df <- relation_df |> mutate(relation_cols = str_replace_all(relation_cols, "relation_", ""))
 ```
 
-```{r}
+```{r frequency for most_info}
 #Most Info df
 counts <-c(
 length(which(gvm_clean$most_info_gv_emails == 1)),
@@ -163,8 +163,6 @@ action_df <- data.frame(
 
 # cleaning names
 action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "action_", ""))
-
-
 
 ```
 
@@ -218,10 +216,10 @@ table(gvm_clean$avid_reader)
 ```
 
 
+
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
 ```
-
 
 
 
