@@ -166,6 +166,7 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 
 
 ```
+
 ```{r DEMO}
 # make age a factor because it will make using it as a variable easier
 gvm_clean$age <- as.factor(gvm_clean$age)
