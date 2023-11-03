@@ -216,7 +216,6 @@ table(gvm_clean$avid_reader)
 ```
 
 
-
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
 ```
