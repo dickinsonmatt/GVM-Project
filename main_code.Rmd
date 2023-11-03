@@ -191,7 +191,7 @@ table(gvm_clean$avid_reader)
 gvm_clean <- gvm_clean |>
   mutate(
     key_pop = as.factor(case_when(
-      (relation_alumni == 1 & age %in% c("36-49", "50-65", "66+")) ~ "Alumni over 30",
+      (relation_alumni == 1 & age %in% c("36-49", "50-65", "66+")) ~ "Alumni over 35",
       TRUE ~ "Other")))
 
 ```
@@ -239,7 +239,7 @@ key_engage_read <- gvm_clean |>
   group_by(key_pop, gvsu_engagement, where_read) |>
   summarize(n = n(),
             percent = case_when(
-              key_pop == "Alumni over 35" ~ n/nrow(gvm_clean |> filter(key_pop == "Alumni over 30")),
+              key_pop == "Alumni over 35" ~ n/nrow(gvm_clean |> filter(key_pop == "Alumni over 35")),
               TRUE ~ n/nrow(gvm_clean |> filter(key_pop == "Other"))
             ) * 100)
 
@@ -270,7 +270,7 @@ key_web_engage <- gvm_clean |>
   group_by(key_pop, website_engagment) |>
   summarize(n = n(),
             percent = case_when(
-              key_pop == "Alumni over 30" ~ n/nrow(gvm_clean |> filter(key_pop == "Alumni over 30")),
+              key_pop == "Alumni over 35" ~ n/nrow(gvm_clean |> filter(key_pop == "Alumni over 35")),
               TRUE ~ n/nrow(gvm_clean |> filter(key_pop == "Other")
             ))*100)
 
