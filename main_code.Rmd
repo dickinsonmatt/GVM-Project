@@ -234,6 +234,25 @@ age_by_action |>
 
 
 
+table(gvm_clean$avid_reader)
+
+```
+
+```{r Most Info by Age Table}
+gvm_clean <- rename(gvm_clean,'info_text'='most_info_text')
+gvm_clean$age <- as.factor(gvm_clean$age) 
+# create new df for the data we want
+age_by_most_info <- gvm_clean |>
+  select(age, starts_with("most_info")) |> # grabbing the variables of interest
+  pivot_longer(!age, names_to = "most_info", values_to = "count") |> # pivoting
+  group_by(age, most_info) |> # grouping to make summarizing
+  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
+  mutate(most_info = str_replace_all(most_info, "most_info_", ""), # simple text cleaning
+         most_info = str_replace_all(most_info, "_", " "),
+         most_info = str_to_title(most_info))
+
+
+
 ```{r key population by gvsu engagement and where they read}
 key_engage_read <- gvm_clean |>
   group_by(key_pop, gvsu_engagement, where_read) |>
@@ -302,7 +321,28 @@ engage_action |>
   geom_col() +
   theme_bw() +
   scale_fill_viridis_d() 
+
 ```
+
+```{r Most Info by Age Graph}
+age_by_most_info |>
+  ggplot(aes(fct_reorder(most_info, n), n)) + # grab variables and reorder action
+    geom_col(aes(fill = age))  +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, vjust = .6)) +
+    labs(
+      x = "Source",
+      y = "Number",
+      fill = "Age group",
+      title = "Where do you aquire most of your information about GVSU?"
+      ) +
+    scale_fill_viridis_d(direction = -1) +
+    scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+    coord_flip()
+
+```
+
+
 
 
 # Exporting clean data as GVM_data.csv
