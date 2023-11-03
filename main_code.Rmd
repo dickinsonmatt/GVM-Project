@@ -306,6 +306,7 @@ engage_action |>
 
 
 # Exporting clean data as GVM_data.csv
+
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
 ```
