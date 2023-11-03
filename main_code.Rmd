@@ -5,6 +5,7 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
+# Data Import
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -30,7 +31,7 @@ gvm_main <- data_import |>
 colnames(gvm_main) <- data_dict$variable_name
 ```
 
-### Cleaning to do
+# Cleaning
 * columns (likert) to numeric
 * where_read to categorize
 * num issues: 1,2,6,7 (0, 1, 2, 3)
@@ -166,35 +167,6 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 
 ```
 
-```{r DEMO}
-# make age a factor because it will make using it as a variable easier
-gvm_clean$age <- as.factor(gvm_clean$age)
-
-# create new df for the data we want
-age_by_action <- gvm_clean |>
-  select(age, starts_with("action")) |> # grabbing the variables of interest
-  pivot_longer(!age, names_to = "action", values_to = "count") |> # pivoting
-  group_by(age, action) |> # grouping to make summarizing
-  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
-  mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
-         action = str_replace_all(action, "_", " "),
-         action = str_to_title(action))
-
-age_by_action |>
-  ggplot(aes(fct_reorder(action, desc(n)), n, fill = age)) + # grab variables and reorder action
-  geom_col()  +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = .6)) +
-  labs(
-    x = "Action",
-    y = "Number",
-    fill = "Age group",
-    title = "Actions taken by Age group"
-  ) +
-  scale_fill_viridis_d(direction = -1) +
-  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) # this line makes sure there is no gap between the bottom of the bars and the horizontal axis
-```
-
 ```{r avid_reader}
 gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
 
@@ -215,6 +187,125 @@ gvm_clean <- gvm_clean %>% mutate(avid_reader=recode(avid_reader,
 table(gvm_clean$avid_reader)
 ```
 
+```{r key population}
+gvm_clean <- gvm_clean |>
+  mutate(
+    key_pop = as.factor(case_when(
+      (relation_alumni == 1 & age %in% c("36-49", "50-65", "66+")) ~ "Alumni over 35",
+      TRUE ~ "Other")))
+
+```
+# Visualizations
+
+```{r DEMO}
+# make age a factor because it will make using it as a variable easier
+gvm_clean$age <- as.factor(gvm_clean$age)
+
+# create new df for the data we want
+age_by_action <- gvm_clean |>
+  select(age, starts_with("action")) |> # grabbing the variables of interest
+  pivot_longer(!age, names_to = "action", values_to = "count") |> # pivoting
+  group_by(age, action) |> # grouping to make summarizing
+  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
+  mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
+         action = str_replace_all(action, "_", " "),
+         action = str_to_title(action),
+         percent = (n/nrow(gvm_clean))*100)
+
+age_by_action |>
+  ggplot(aes(fct_reorder(action, (percent)), percent, fill = age)) + # grab variables and reorder action
+  geom_col()  +
+  theme_bw() +
+  # theme(axis.text.x = element_text(angle = 45, vjust = .6)) +
+  labs(
+    x = "Action",
+    y = "Percent",
+    fill = "Age group",
+    title = "Actions taken by Age group (n = 133)"
+  ) +
+  scale_fill_viridis_d(direction = -1) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) + # this line makes sure there is no gap between the bottom of the bars and the horizontal axis 
+  coord_flip() 
+
+# compare within groups
+# focus 
+```
+
+
+
+
+```{r key population by gvsu engagement and where they read}
+key_engage_read <- gvm_clean |>
+  group_by(key_pop, gvsu_engagement, where_read) |>
+  summarize(n = n(),
+            percent = case_when(
+              key_pop == "Alumni over 35" ~ n/nrow(gvm_clean |> filter(key_pop == "Alumni over 35")),
+              TRUE ~ n/nrow(gvm_clean |> filter(key_pop == "Other"))
+            ) * 100)
+
+key_engage_read |>
+  ggplot(aes(fct_reorder(key_pop, (percent)), percent, fill = where_read)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  labs(x = "Population", y = "Percent", fill = "Reading Location", title = "Where do you read the GV Magazine?") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_fill_viridis_d()
+
+key_engage_read |>
+  ggplot(aes(fct_reorder(key_pop, (percent)), percent, fill = gvsu_engagement)) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  labs(x = "Population", y = "Percent", fill = "Engagement", title = "How do you engage with GVSU?") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_fill_viridis_d()
+
+```
+
+```{r key population by website engagement}
+# age on website engagement
+gvm_clean <- gvm_clean |>
+  mutate(num_action = sum(action_saved_article, action_discussed_article, na.rm = TRUE))
+
+key_web_engage <- gvm_clean |>
+  group_by(key_pop, website_engagment) |>
+  summarize(n = n(),
+            percent = case_when(
+              key_pop == "Alumni over 35" ~ n/nrow(gvm_clean |> filter(key_pop == "Alumni over 35")),
+              TRUE ~ n/nrow(gvm_clean |> filter(key_pop == "Other")
+            ))*100)
+
+
+key_web_engage |>
+  ggplot(aes(key_pop, percent, fill = as.factor(website_engagment))) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  labs(x = "Population", y = "Percent", fill = "Website Engagement", title = "What could make the website more engaging?") +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_fill_viridis_d()
+
+```
+
+
+```{r engaging with GV more more actions}
+engage_action <- gvm_clean |>
+  select(gvsu_engagement, starts_with("action")) |> # grabbing the variables of interest
+  pivot_longer(!gvsu_engagement, names_to = "action", values_to = "count") |> # pivoting
+  group_by(gvsu_engagement, action) |> # grouping to make summarizing
+  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
+  mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
+         action = str_replace_all(action, "_", " "),
+         action = str_to_title(action))
+
+
+engage_action |>
+  ggplot(aes(gvsu_engagement, n, fill = action)) +
+  geom_col() +
+  theme_bw() +
+  scale_fill_viridis_d() 
+```
+
+
+# Exporting clean data as GVM_data.csv
 
 ```{r exporting clean data}
 write_csv(gvm_clean, "GVM_data.csv")
