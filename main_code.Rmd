@@ -232,12 +232,6 @@ age_by_action |>
 ```
 
 
-
-
-table(gvm_clean$avid_reader)
-
-```
-
 ```{r Most Info by Age Table}
 gvm_clean <- rename(gvm_clean,'info_text'='most_info_text')
 gvm_clean$age <- as.factor(gvm_clean$age) 
@@ -252,6 +246,7 @@ age_by_most_info <- gvm_clean |>
          most_info = str_to_title(most_info))
 
 
+```
 
 ```{r key population by gvsu engagement and where they read}
 key_engage_read <- gvm_clean |>
