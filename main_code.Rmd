@@ -244,10 +244,6 @@ age_by_action |>
 
 
 
-
-
-
-
 ```{r Most Info by Age Table}
 gvm_clean <- rename(gvm_clean,'info_text'='most_info_text')
 gvm_clean$age <- as.factor(gvm_clean$age) 
@@ -260,6 +256,7 @@ age_by_most_info <- gvm_clean |>
   mutate(most_info = str_replace_all(most_info, "most_info_", ""), # simple text cleaning
          most_info = str_replace_all(most_info, "_", " "),
          most_info = str_to_title(most_info))
+
 
 ```
   
@@ -357,6 +354,7 @@ age_by_most_info |>
     coord_flip()
 
 ```
+
 * action by key population
 ```{r key pop by num actions}
 gvm_clean |>
@@ -371,7 +369,6 @@ gvm_clean |>
   ) +
   scale_fill_viridis_d()
 ```
-
 
 * print likert questions
 ```{r}
