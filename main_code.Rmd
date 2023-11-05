@@ -167,6 +167,8 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 
 ```
 
+
+# Creating new variables
 ```{r avid_reader}
 gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
 
@@ -195,6 +197,14 @@ gvm_clean <- gvm_clean |>
       TRUE ~ "Other")))
 
 ```
+
+```{r number actions}
+gvm_clean <- gvm_clean |>
+  mutate(num_actions = rowSums(gvm_clean |> select(starts_with("action_")), na.rm = TRUE)
+    )
+```
+
+
 # Visualizations
 
 ```{r DEMO}
@@ -206,22 +216,23 @@ age_by_action <- gvm_clean |>
   select(age, starts_with("action")) |> # grabbing the variables of interest
   pivot_longer(!age, names_to = "action", values_to = "count") |> # pivoting
   group_by(age, action) |> # grouping to make summarizing
-  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
+  summarize(count = sum(count, na.rm = TRUE),
+            n = n()) |> # getting the counts for each category
   mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
          action = str_replace_all(action, "_", " "),
          action = str_to_title(action),
-         percent = (n/nrow(gvm_clean))*100)
+         percent2 = (count/n)*100)
 
 age_by_action |>
-  ggplot(aes(fct_reorder(action, (percent)), percent, fill = age)) + # grab variables and reorder action
-  geom_col()  +
+  ggplot(aes(fct_reorder(action, (percent2)), percent2, fill = age)) + # grab variables and reorder action
+  geom_bar(stat = "identity")  +
   theme_bw() +
   # theme(axis.text.x = element_text(angle = 45, vjust = .6)) +
   labs(
     x = "Action",
     y = "Percent",
     fill = "Age group",
-    title = "Actions taken by Age group (n = 133)"
+    title = "Actions taken by Age group (n = )"
   ) +
   scale_fill_viridis_d(direction = -1) +
   scale_y_continuous(expand = expansion(mult = c(0, 0.1))) + # this line makes sure there is no gap between the bottom of the bars and the horizontal axis 
@@ -232,11 +243,6 @@ age_by_action |>
 ```
 
 
-
-
-table(gvm_clean$avid_reader)
-
-```
 
 ```{r Most Info by Age Table}
 gvm_clean <- rename(gvm_clean,'info_text'='most_info_text')
@@ -252,7 +258,8 @@ age_by_most_info <- gvm_clean |>
          most_info = str_to_title(most_info))
 
 
-
+```
+  
 ```{r key population by gvsu engagement and where they read}
 key_engage_read <- gvm_clean |>
   group_by(key_pop, gvsu_engagement, where_read) |>
@@ -282,9 +289,6 @@ key_engage_read |>
 
 ```{r key population by website engagement}
 # age on website engagement
-gvm_clean <- gvm_clean |>
-  mutate(num_action = sum(action_saved_article, action_discussed_article, na.rm = TRUE))
-
 key_web_engage <- gvm_clean |>
   group_by(key_pop, website_engagment) |>
   summarize(n = n(),
@@ -303,25 +307,34 @@ key_web_engage |>
   scale_fill_viridis_d()
 
 ```
-
-
-```{r engaging with GV more more actions}
-engage_action <- gvm_clean |>
-  select(gvsu_engagement, starts_with("action")) |> # grabbing the variables of interest
-  pivot_longer(!gvsu_engagement, names_to = "action", values_to = "count") |> # pivoting
-  group_by(gvsu_engagement, action) |> # grouping to make summarizing
-  summarize(n = sum(count, na.rm = TRUE)) |> # getting the counts for each category
-  mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
-         action = str_replace_all(action, "_", " "),
-         action = str_to_title(action))
-
-
-engage_action |>
-  ggplot(aes(gvsu_engagement, n, fill = action)) +
-  geom_col() +
+```{r num actions by age}
+gvm_clean |>
+  ggplot(aes(as.factor(num_actions), fill = age)) +
+  geom_bar(position = "fill") +
   theme_bw() +
-  scale_fill_viridis_d() 
+  labs(
+    x = "Number of actions",
+    y = "Percent",
+    fill = "Age Group",
+    title = "Number of actions selected by age groups"
+  ) +
+  scale_fill_viridis_d(direction = -1)
+```
 
+
+```{r engaging with GV mean more actions}
+gvm_clean |>
+  ggplot(aes(as.factor(gvsu_engagement), fill = as.factor(num_actions))) +
+  geom_bar(position = "fill") +
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Percent",
+    fill = "Number of Actions",
+    title = "After reading the GVM magazine are you more likely to engage in GV?"
+  ) +
+  scale_fill_viridis_d()
+  
 ```
 
 ```{r Most Info by Age Graph}
@@ -342,6 +355,35 @@ age_by_most_info |>
 
 ```
 
+* action by key population
+```{r key pop by num actions}
+gvm_clean |>
+  ggplot(aes(key_pop, fill = as.factor(num_actions))) +
+  geom_bar(position = "fill") +
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Percent",
+    fill = "Number of actions",
+    title = "Number actions by key population"
+  ) +
+  scale_fill_viridis_d()
+```
+
+* print likert questions
+```{r}
+key_print_percents <- gvm_clean |> 
+  select(key_pop, starts_with("print_")) |>
+  pivot_longer(!key_pop, names_to = "likert_type", values_to = "value") |>
+  group_by(key_pop, likert_type) |>
+  summarize(count = mean(value),
+            n = n())
+
+key_print_percents |>
+  ggplot(aes(key_pop, count, fill = likert_type)) +
+  geom_col(position = "dodge")
+
+```
 
 
 
