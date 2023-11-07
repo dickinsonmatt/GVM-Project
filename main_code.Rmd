@@ -74,7 +74,10 @@ gvm_clean <- gvm_main |>
 
 ```{r foster cleaning}
 gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
-                                'NOT_APPLICABLE' = '10+'))
+                                'NOT_APPLICABLE' = '15'))
+
+gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
+
 gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
                                 '1' = 'Yes',
                                 '2' = "I don't know/I'm not sure", 
@@ -221,7 +224,7 @@ age_by_action <- gvm_clean |>
   mutate(action = str_replace_all(action, "action_", ""), # simple text cleaning
          action = str_replace_all(action, "_", " "),
          action = str_to_title(action),
-         percent2 = (count/n)*100)
+         percent2 = (count/n))
 
 age_by_action |>
   ggplot(aes(fct_reorder(action, (percent2)), percent2, fill = age)) + # grab variables and reorder action
@@ -323,6 +326,7 @@ gvm_clean |>
 
 
 ```{r engaging with GV mean more actions}
+# find average number of actions would be better
 gvm_clean |>
   ggplot(aes(as.factor(gvsu_engagement), fill = as.factor(num_actions))) +
   geom_bar(position = "fill") +
@@ -336,6 +340,41 @@ gvm_clean |>
   scale_fill_viridis_d()
   
 ```
+
+```{r age or key group by num actions}
+num_per_pop <- gvm_clean |>
+  select(age, key_pop, num_actions) |>
+  group_by(key_pop) |>
+  summarize(n = n()) |>
+  pull(n)
+
+actions_key_pop <- gvm_clean |>
+  select(key_pop, num_actions) |>
+  group_by(key_pop, num_actions) |>
+  summarize(n = n()) |>
+  ungroup() |>
+  add_row(num_actions = 7, key_pop = "Alumni over 35", n = 0) |>
+  arrange(key_pop, num_actions) |>
+  mutate(total = sort(rep(num_per_pop, 7), decreasing = FALSE),
+         total2 = case_when(
+           key_pop == "Other" ~ num_per_pop[2],
+           TRUE ~ num_per_pop[1]),
+         percent = n / total2)|>
+  arrange(desc(percent)) 
+
+actions_key_pop |>
+  ggplot(aes(key_pop, percent, fill = as.factor(num_actions))) +
+  geom_col(position = "dodge") +
+  theme_bw() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.2))) +
+  scale_fill_viridis_d() +
+  labs(
+    y = "Percent",
+    fill = "Number of actions",
+    title = "Key Population by number of actions") +
+  theme(axis.title.x = element_blank())
+```
+
 
 ```{r Most Info by Age Graph}
 age_by_most_info |>
@@ -371,21 +410,34 @@ gvm_clean |>
 ```
 
 * print likert questions
-```{r}
+```{r print likert questions}
 key_print_percents <- gvm_clean |> 
-  select(key_pop, starts_with("print_")) |>
-  pivot_longer(!key_pop, names_to = "likert_type", values_to = "value") |>
+  select(key_pop, age, starts_with("print_")) |>
+  pivot_longer(!c(key_pop, age), names_to = "likert_type", values_to = "value") |>
+  mutate(likert_type = str_replace_all(likert_type, "print_|likert", ""),
+         likert_type = str_to_title(str_replace_all(likert_type, "_", " "))) |>
   group_by(key_pop, likert_type) |>
   summarize(count = mean(value),
-            n = n())
+            n = n()) 
 
 key_print_percents |>
   ggplot(aes(key_pop, count, fill = likert_type)) +
-  geom_col(position = "dodge")
+  geom_col(position = "dodge") +
+  theme_bw() +
+  labs(
+    x = "",
+    y = "Mean Score",
+    fill = "Question Area",
+    title = paste(
+      "Mean Scores for Print Likert Questions ", 
+      "(n = ", key_print_percents$n[1], ", ", key_print_percents$n[5], ")" , 
+      sep = "")) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) +
+  scale_fill_viridis_d()
 
 ```
 
-
+* actions by key pop
 
 # Exporting clean data as GVM_data.csv
 
