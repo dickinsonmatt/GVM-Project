@@ -73,30 +73,34 @@ gvm_clean <- gvm_main |>
 ```
 
 ```{r foster cleaning}
-gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
-                                'NOT_APPLICABLE' = '15'))
+gvm_clean <- gvm_clean %>% mutate(
+  num_articles=case_when(num_articles == 'NOT_APPLICABLE' ~ "15",
+                         TRUE ~ num_articles))
 
 gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
 
-gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
-                                '1' = 'Yes',
-                                '2' = "I don't know/I'm not sure", 
-                                '3' = "No"))
+gvm_clean <- gvm_clean %>% mutate(
+  website_only=case_when(
+    website_only == '1' ~ "Yes",
+    website_only == '2' ~ "I don't know/I'm not sure",
+    TRUE ~ "No"))
 
-gvm_clean <- gvm_clean %>% mutate(website_engagment=recode(website_engagment,
-                                '1' = 'Larger variety of content', 
-                                '2' = 'Easier navigation',
-                                '3' = 'It is currently engaging',
-                                '8' = 'More specific recommendations',
-                                '4' = "I don't know/I'm not sure",
-                                '5' = "I don't use the website", 
-                                '7' = 'Other'))
+gvm_clean <- gvm_clean %>% mutate(
+  website_engagment=case_when(
+    website_engagment == '1' ~ "Larger variety of content",
+    website_engagment == '2' ~ 'Easier navigation',
+    website_engagment == '3' ~ 'It is currently engaging',
+    website_engagment == '8' ~ 'More specific recommendations',
+    website_engagment == '4' ~ "I don't know/I'm not sure",
+    website_engagment == '5' ~ "I don't use the website",
+    website_engagment == '7' ~ 'Other'))
 
-gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
-                                '1' = 'Word of Mouth', 
-                                '2' = 'Email',
-                                '3' = 'Social Media',
-                                '4' = 'Link within printed Issue'))
+gvm_clean <- gvm_clean %>% mutate(
+  drive_to_website=case_when(
+    drive_to_website == '1' ~ 'Word of Mouth', 
+    drive_to_website == '2' ~ 'Email',
+    drive_to_website == '3' ~ 'Social Media',
+    drive_to_website == '4' ~ 'Link within printed Issue'))
                                  
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
@@ -175,19 +179,9 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 ```{r avid_reader}
 gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
 
-gvm_clean <- gvm_clean %>% mutate(avid_reader=recode(avid_reader,
-                                '0' = '0-4 Articles',
-                                '1' = '0-4 Articles',
-                                '2' = "0-4 Articles", 
-                                '3' = "0-4 Articles",
-                                '4' = "0-4 Articles",
-                                '5' = "5-10+",
-                                '6' = "5-10+",
-                                '7' = "5-10+",
-                                '8' = "5-10+",
-                                '9' = "5-10+",
-                                '10' = "5-10+",
-                                '10+' = "5-10+"))
+gvm_clean <- gvm_clean %>% mutate(avid_reader=case_when(
+  avid_reader %in% c(0, 1, 2, 3, 4) ~ "0-4 articles",
+  avid_reader %in% c(5, 6, 7, 8, 9, 10, 15) ~ "5-10+ Articles"))
 
 table(gvm_clean$avid_reader)
 ```
