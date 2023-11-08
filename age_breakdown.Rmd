@@ -1,0 +1,39 @@
+---
+title: "Grand Valley Magazine Project"
+author: "Matthew Dickinson & Foster Thorburn"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+# Data Import
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(readr)
+library(flextable)
+library(ggthemes)
+```
+
+
+```{r data}
+gvm_data <- read_csv("GVM_data.csv")
+```
+
+# Question Breakdown
+
+## Question 1
+Asks about ....
+```{r Question 1}
+
+```
+
+
+## Question 2
+Asks about ....
+```{r Question 2}
+
+```
+
