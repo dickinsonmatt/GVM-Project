@@ -463,7 +463,7 @@ ggplot(gvm_clean, aes(x = num_articles, y = num_issues))+
 
 
 
-# sjPlot::tab_xtab(var.row = gvm_clean$num_articles, var.col = gvm_clean$num_issues, title = "Articles and Issues Read", show.cell.prc = TRUE)
+#sjPlot::tab_xtab(var.row = gvm_clean$num_articles, var.col = gvm_clean$num_issues, title = "Articles and Issues Read", show.cell.prc = TRUE)
 ```
 
 * Website Likert Questions
