@@ -2,7 +2,9 @@
 title: "Grand Valley Magazine Project"
 author: "Matthew Dickinson & Foster Thorburn"
 date: "`r Sys.Date()`"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 # Data Import
@@ -15,6 +17,7 @@ library(tidyverse)
 library(readr)
 library(flextable)
 library(ggthemes)
+library(likert)
 ```
 
 ```{r data import}
@@ -79,10 +82,11 @@ gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
 #                                 "NA" = 15))
 gvm_clean$num_articles[is.na(gvm_clean$num_articles)] <- 15
 
+
 gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
-                                '1' = 'Yes',
-                                '2' = "I don't know/I'm not sure", 
-                                '3' = "No"))
+                                "1" = "Yes",
+                                "2" = "I don't know/I'm not sure", 
+                                "3" = "No"))
 
 gvm_clean <- gvm_clean %>% mutate(website_engagment=recode(website_engagment,
                                 '1' = "Larger variety of content", 
@@ -454,31 +458,151 @@ sjPlot::tab_xtab(var.row = gvm_clean$num_articles, var.col = gvm_clean$num_issue
 ```
 
 * Website Likert Questions
-```{r}
+```{r website likert}
 #filtering out responses of those who say they read the website
 select_levels <- c("GVM Website","Both")
 website_likert_df <- gvm_clean %>%
   filter(where_read %in% select_levels)
 rm(select_levels)
 
-#filtering out responses of those who've read zero website articles
+#filtering out responses of those who've read more than zero website articles
 website_likert_df <- gvm_clean %>%
   filter(num_articles != 0)
 
 #making df for website likert questions
-website_likert_df <- select(website_likert_df, starts_with("website_") & ends_with("_likert"))
+website_likert_df <- select(website_likert_df, starts_with("website_") & ends_with("_likert"), age)
+
+#defining levels
+custom_levels <- c("Strongly Disagree", "Slighly Disagree", "Neutral", "Slighly Agree", "Strongly Agree")
+
+
+
+#renaming relevant columns
+website_likert_df <- website_likert_df %>% rename(
+  "I enjoy reading GVM website" = website_enjoy_likert,
+  "The website is easy to navigate" = website_navigate_likert,
+  "Design & Visual Elements aid in Understanding & Enjoyment" = website_design_likert,
+  "I feel more connected to GVSU after reading GVM website" = website_connected_likert,
+  "Reading GVM website makes me proud to be part of GVSU community" = website_proud_likert)
 
 #making all variables factors
 website_likert_df <- data.frame(lapply(website_likert_df, as.factor))
 
 #plotting likert 
-wl_format<- likert(website_likert_df)
-wl_plot <- plot(wl_format)
+wl_format <- likert(website_likert_df[,1:5], grouping=website_likert_df[,6])
 
-#printing plot
-print(wl_plot)
+wl_format %>% plot()
 ```
 
+# Where_Read by Age
+```{r where_read by Age}
+#Create data frame with the counts of each typ 
+where_read_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$where_read))
+
+#renaming
+where_read_by_age <- rename(where_read_by_age,'age'='Var1',
+                                      'where_read'='Var2',
+                                      'Count'='Freq') %>% 
+                     mutate(percent = (Count/sum(Count))*100)
+
+#Plotting 
+where_read_by_age %>% ggplot(aes(x=where_read, y=percent, fill=age)) +
+  geom_bar(stat = 'identity', position='dodge') +
+  labs(title = "(Q2) Where Read by Age",
+       y = "Percent",
+       fill = "Age") +
+  theme(axis.title.y = element_blank()) +
+  coord_flip() +
+  scale_fill_viridis_d()
+```
+
+# Engagement bt Age
+```{r Engagement by Age}
+#Create data frame with the counts of each typ 
+engagement_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$gvsu_engagement))
+
+#renaming
+engagement_by_age <- rename(engagement_by_age,'age'='Var1',
+                                      'gvsu_engagement'='Var2',
+                                      'Count'='Freq') %>% 
+                     mutate(percent = (Count/sum(Count))*100)
+
+#Plotting
+engagement_by_age %>% ggplot(aes(x=gvsu_engagement, y=percent, fill=age)) +
+  geom_bar(stat = 'identity', position='dodge') +
+  labs(title = "More Likley to Engage in Events/Activities by Age",
+       y = "Percent",
+       fill = "Age") +
+  theme(axis.title.y = element_blank()) +
+  coord_flip() +
+  scale_fill_viridis_d()
+```
+
+# drive_to_website by age
+```{r drive_to_website by Age}
+#Create data frame with the counts of each typ 
+drive_to_website_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$drive_to_website))
+
+#renaming
+drive_to_website_by_age <- rename(drive_to_website_by_age,'age'='Var1',
+                                      'drive_to_website'='Var2',
+                                      'Count'='Freq') %>% 
+                     mutate(percent = (Count/sum(Count))*100)
+
+#Plotting
+drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=age)) +
+  geom_bar(stat = 'identity', position='dodge') +
+  labs(title = "Most Likley to Drive to Website by Age",
+       y = "Percent",
+       fill = "Age") +
+  theme(axis.title.y = element_blank()) +
+  coord_flip() +
+  scale_fill_viridis_d()
+```
+
+# website_engagement by age
+```{r web engagement by Age}
+#Create data frame with the counts of each typ 
+website_engagement_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$website_engagement))
+
+#renaming
+website_engagement_by_age <- rename(website_engagement_by_age,'age'='Var1',
+                                      'website_engagement'='Var2',
+                                      'Count'='Freq') %>% 
+                     mutate(percent = (Count/sum(Count))*100)
+
+#Plotting 
+website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=age)) +
+  geom_bar(stat = 'identity', position='dodge') +
+  labs(title = "How to Make Website More Engaging by Age",
+       y = "Percent",
+       fill = "Age") +
+  theme(axis.title.y = element_blank()) +
+  coord_flip() +
+  scale_fill_viridis_d()
+```
+
+# Opting by age
+```{r Opting by Age}
+#Create data frame with the counts of each typ 
+opting_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$opting))
+
+#renaming
+opting_by_age <- rename(opting_by_age,'age'='Var1',
+                                      'opting'='Var2',
+                                      'Count'='Freq') %>% 
+                     mutate(percent = (Count/sum(Count))*100)
+
+#Plotting 
+opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=age)) +
+  geom_bar(stat = 'identity', position='dodge') +
+  labs(title = "Opting Status by Age",
+       y = "Percent",
+       fill = "Age") +
+  theme(axis.title.y = element_blank()) +
+  coord_flip() +
+  scale_fill_viridis_d()
+```
 
 # Exporting clean data as GVM_data.csv
 
