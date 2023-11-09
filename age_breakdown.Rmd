@@ -7,7 +7,7 @@ output: pdf_document
 
 # Data Import
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 ```
 
 ```{r packages, include = FALSE, message = FALSE, warning = FALSE}
@@ -15,6 +15,7 @@ library(tidyverse)
 library(readr)
 library(flextable)
 library(ggthemes)
+library(forcats)
 ```
 
 
@@ -24,10 +25,58 @@ gvm_data <- read_csv("GVM_data.csv")
 
 # Question Breakdown
 
-## Question 1
-Asks about ....
-```{r Question 1}
+Establishing number of people per age group.
+```{r number people, echo=FALSE}
+age_group_nums <- gvm_data |>
+  group_by(age) |>
+  summarize(number_in_age_group = n())
 
+flextable(age_group_nums)
+
+gvm_data$age <- as.factor(gvm_data$age)
+```
+
+```{r setting globally theme, include = FALSE}
+theme_set(theme_bw())
+```
+
+
+## Question 1
+Asks `Where do you acquire most of your information about GVSU?` and is a mark all that apply question.
+
+
+```{r Question 1}
+Q1_data <- gvm_data |>
+  select(age, starts_with("most_info_")) |>
+  pivot_longer(!age, names_to = "location", values_to = "selection") |>
+  mutate(location = str_replace_all(str_replace_all(location, "most_info_", ""), "_", " "),
+         location = str_to_title(location),
+         location = str_replace_all(location, "Gvm", "GVM"),
+         location = str_replace_all(location, "Gv", "GV"),
+         location = case_when(
+           location == "Wordofmouth Alumni" ~ "Word of Mouth",
+           location == "Socialmedia" ~ "Social Media",
+           TRUE ~ location
+         )) |>
+  group_by(age, location) |>
+  summarize(count = sum(selection, na.rm = TRUE)) |>
+  left_join(age_group_nums, by = "age") |>
+  mutate(percent = (count/number_in_age_group)*100,
+         age = as.factor(age),
+         location = as.factor(location))
+
+Q1_data |>
+  ggplot(aes(fct_reorder(location, (percent)), percent, fill = forcats::fct_rev(age))) +
+  geom_col(position = "fill") +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+  labs(
+    x = "Location",
+    y = "Percent",
+    title = "Where do you acquire most of your information about GV?",
+    fill = "Age Group"
+  )
 ```
 
 
@@ -35,5 +84,170 @@ Asks about ....
 Asks about ....
 ```{r Question 2}
 
+```
+
+
+## Question 3
+Asks `How many PRINT issues have you read within the last year?` and is single select.
+
+
+```{r Question 3}
+Q3_data <- gvm_data |>
+  select(age, num_issues) |>
+  group_by(age, num_issues) |>
+  summarize(count = n()) |>
+  left_join(age_group_nums) |>
+  mutate(percent = (count/number_in_age_group)*100)
+
+
+Q3_data |>
+  ggplot(aes((num_issues), percent, fill = forcats::fct_rev(age))) +
+  geom_col(position = "fill") +
+  scale_fill_viridis_d() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+  labs(
+    x = "Number of Issues",
+    y = "Percent",
+    fill = "Age Group",
+    title = "How many PRINT issues have you read within the last year?"
+  )
+```
+
+## Question 5 
+Asks `To what extent do you agree or disagree with these statements about PRINTED issues of Grand Valley Magazine?` and is a likert matrix, where a score of `1` means `Strongly Disagree` and `5` means `Strongly Agree.`
+
+The questions are:
+
+
+* I **enjoy** reading the printed publication.
+
+* The **design** and visual elements aid in my understanding and enjoyment of the text.
+
+* I feel more **connected** to Grand Valley State University after the print issues.
+
+* Reading print issues of Grand Valley Magazine makes me **proud** to be part of the GVSU community.
+
+
+
+```{r Question 5}
+Q5_data <- gvm_data |>
+  select(age, starts_with("print_")) |>
+  pivot_longer(!age, names_to = "category", values_to = "score") |>
+  mutate(category = str_to_title(str_remove_all(str_replace_all(str_replace_all(category, "print_", ""), "_", " "), "likert"))) |>
+  group_by(age, category) |>
+  summarise(mean_score = mean(score))
+
+Q5_data |> 
+  ggplot(aes(category, mean_score, fill = forcats::fct_rev(age))) +
+  geom_col(position = "dodge") +
+  scale_fill_viridis_d() +
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+  coord_cartesian(ylim = c(3, 4)) +
+  labs(
+    x = "Question Type",
+    y = "Mean Score", 
+    fill = "Age Group",
+    title = "To what extent do you agree or disagree with these statements about PRINTED \nissues of Grand Valley Magazine?"
+  ) +
+  theme(legend.position = "none") +
+  facet_wrap(~age)
+  
+```
+
+## Question 7
+Asks `How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?`
+
+
+```{r Question 7}
+Q7_data <- gvm_data |>
+  select(age, num_articles) |>
+  group_by(age, num_articles) |>
+  summarize(count = n()) |>
+  left_join(age_group_nums) |>
+  mutate(percent = (count/number_in_age_group)*100) 
+
+Q7_data |> 
+  ggplot(aes(as.factor(num_articles), percent, fill = forcats::fct_rev(age))) +
+  geom_col(position = "fill") +
+  scale_fill_viridis_d() +
+  scale_y_continuous(expand = expansion(mult = c(0, 0))) +
+  labs(
+    x = "Number of Articles",
+    y = "Percent",
+    fill = "Age Group",
+    title = "How many articles have you read on the Grand Valley Magazine \nWEBSITE in the last year?",
+    caption = "Note: 15 indicates 10+ articles"
+  )
+```
+
+## Question 9
+Asks `Would you read Grand Valley Magazine if it was offered as a WEBSITE version only?`
+
+
+```{r Question 9}
+Q9_data <- gvm_data |>
+  select(age, website_only) |>
+  group_by(age, website_only) |>
+  summarize(count = n()) |>
+  left_join(age_group_nums) |>
+  mutate(percent = (count/number_in_age_group)*100,
+         website_only = case_when(
+           website_only == "I don't know/I'm not sure" ~ "Unsure",
+           TRUE ~ website_only
+         ))
+
+Q9_data |>
+  ggplot(aes(forcats::fct_rev(as.factor(website_only)), percent, fill = forcats::fct_rev(age))) +
+  geom_col(position = "dodge") +
+  scale_fill_viridis_d() +
+  scale_y_continuous(expand = expansion(mult = c(0, .1))) +
+  labs(
+    y = "Percent",
+    fill = "Age Group",
+    title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?"
+  ) +
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none") +
+  facet_grid(~age)
+```
+
+## Question 11
+Asks `What actions have you taken as a result of reading Grand Valley Magazine?` and was a mark all that apply.
+
+
+```{r Question 11}
+Q11_data <- gvm_data |>
+  select(age, starts_with("action_")) |>
+  pivot_longer(!age, names_to = "action", values_to = "selection") |>
+  mutate(action = str_to_title(str_replace_all(str_replace_all(action, "action_", ""), "_", " " )),
+         action = case_when(
+           action == "Recommended Gv" ~ "Recommended GV",
+           action == "Shared Article Social Media" ~ "Shared Article - Social Media",
+           action == "Shared Article Email" ~ "Shared Article - Email",
+           TRUE ~ action
+         )) |>
+  group_by(age, action) |>
+  summarize(count = sum(selection, na.rm = TRUE)) |>
+  left_join(age_group_nums) |>
+  mutate(percent = (count/number_in_age_group)*100,
+         action = as.factor(action))
+
+
+Q11_data |>
+  filter(action != "None") |>
+  ggplot(aes(fct_reorder(action, (percent)), percent, fill = forcats::fct_rev(age))) +
+  geom_col(position = "fill") +
+  scale_y_continuous(expand = expansion(mult=c(0, 0))) +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  labs(
+    x = "Action",
+    y = "Percent",
+    fill = "Age Group",
+    title = "What actions have you taken as a result of reading the \nGrand Valley Magazine?"
+  )
+  
 ```
 
