@@ -73,10 +73,11 @@ gvm_clean <- gvm_main |>
 ```
 
 ```{r foster cleaning}
-#gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
-#                                'NOT_APPLICABLE' = '15'))
-
 gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
+
+#gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
+#                                 "NA" = 15))
+gvm_clean$num_articles[is.na(gvm_clean$num_articles)] <- 15
 
 gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
                                 '1' = 'Yes',
