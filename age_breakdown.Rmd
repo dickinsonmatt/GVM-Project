@@ -31,7 +31,7 @@ age_group_nums <- gvm_data |>
   group_by(age) |>
   summarize(number_in_age_group = n())
 
-flextable(age_group_nums)
+flextable(age_group_nums, cwidth = 3)
 
 gvm_data$age <- as.factor(gvm_data$age)
 ```
