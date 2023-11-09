@@ -82,26 +82,43 @@ gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
 #                                 "NA" = 15))
 gvm_clean$num_articles[is.na(gvm_clean$num_articles)] <- 15
 
+gvm_clean <- gvm_clean %>%
+  mutate(website_only = case_when(
+    website_only == '1' ~ "Yes",
+    website_only == '2' ~ "I don't know/I'm not sure",
+    website_only == '3' ~ "No",
+    TRUE ~ as.character(website_only)
+  ))
 
-gvm_clean <- gvm_clean %>% mutate(website_only=recode(website_only,
-                                "1" = "Yes",
-                                "2" = "I don't know/I'm not sure", 
-                                "3" = "No"))
+gvm_clean <- gvm_clean %>%
+  mutate(website_engagment = case_when(
+    website_engagment == '1' ~ "Larger variety of content",
+    website_engagment == '2' ~ "Easier navigation",
+    website_engagment == '3' ~ "It is currently engaging",
+    website_engagment == '8' ~ "More specific recommendations",
+    website_engagment == '4' ~ "I don't know/I'm not sure",
+    website_engagment == '5' ~ "I don't use the website",
+    website_engagment == '7' ~ "Other",
+    TRUE ~ as.character(website_engagment)
+  ))
 
-gvm_clean <- gvm_clean %>% mutate(website_engagment=recode(website_engagment,
-                                '1' = "Larger variety of content", 
-                                '2' = "Easier navigation",
-                                '3' = "It is currently engaging",
-                                '8' = "More specific recommendations",
-                                '4' = "I don't know/I'm not sure",
-                                '5' = "I don't use the website", 
-                                '7' = "Other"))
 
-gvm_clean <- gvm_clean %>% mutate(drive_to_website=recode(drive_to_website,
-                                '1' = 'Word of Mouth', 
-                                '2' = 'Email',
-                                '3' = 'Social Media',
-                                '4' = 'Link within printed Issue'))
+gvm_clean <- gvm_clean %>%
+  mutate(drive_to_website = case_when(
+    drive_to_website == '1' ~ 'Word of Mouth',
+    drive_to_website == '2' ~ 'Email',
+    drive_to_website == '3' ~ 'Social Media',
+    drive_to_website == '4' ~ 'Link within printed Issue',
+    drive_to_website == '5' ~ 'Doing research',
+    TRUE ~ as.character(drive_to_website)
+  ))
+
+gvm_clean <- gvm_clean %>%
+  mutate(opting = case_when(
+    opting == '1' ~ 'Yes',
+    opting == '2' ~ 'No',
+    TRUE ~ as.character(opting)
+  ))
                                  
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
@@ -180,19 +197,12 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 ```{r avid_reader}
 gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
 
-gvm_clean <- gvm_clean %>% mutate(avid_reader=recode(avid_reader,
-                                '0' = '0-4 Articles',
-                                '1' = '0-4 Articles',
-                                '2' = "0-4 Articles", 
-                                '3' = "0-4 Articles",
-                                '4' = "0-4 Articles",
-                                '5' = "5-10+",
-                                '6' = "5-10+",
-                                '7' = "5-10+",
-                                '8' = "5-10+",
-                                '9' = "5-10+",
-                                '10' = "5-10+",
-                                '15' = "5-10+"))
+gvm_clean <- gvm_clean %>%
+  mutate(avid_reader = case_when(
+    avid_reader %in% c('0', '1', '2', '3', '4') ~ '0-4 Articles',
+    avid_reader %in% c('5', '6', '7', '8', '9', '10', '15') ~ '5-10+',
+    TRUE ~ as.character(avid_reader)
+  ))
 
 table(gvm_clean$avid_reader)
 ```
@@ -552,7 +562,7 @@ drive_to_website_by_age <- rename(drive_to_website_by_age,'age'='Var1',
 #Plotting
 drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=age)) +
   geom_bar(stat = 'identity', position='dodge') +
-  labs(title = "Most Likley to Drive to Website by Age",
+  labs(title = "Driver of Website Visitation by Age (Q8)",
        y = "Percent",
        fill = "Age") +
   theme(axis.title.y = element_blank()) +
@@ -563,8 +573,7 @@ drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=age))
 # website_engagement by age
 ```{r web engagement by Age}
 #Create data frame with the counts of each typ 
-website_engagement_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$website_engagement))
-
+website_engagement_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$website_engagment))
 #renaming
 website_engagement_by_age <- rename(website_engagement_by_age,'age'='Var1',
                                       'website_engagement'='Var2',
@@ -596,13 +605,16 @@ opting_by_age <- rename(opting_by_age,'age'='Var1',
 #Plotting 
 opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=age)) +
   geom_bar(stat = 'identity', position='dodge') +
-  labs(title = "Opting Status by Age",
+  labs(title = "Opting into Print Issues by Age",
        y = "Percent",
        fill = "Age") +
   theme(axis.title.y = element_blank()) +
   coord_flip() +
   scale_fill_viridis_d()
 ```
+
+
+
 
 # Exporting clean data as GVM_data.csv
 
