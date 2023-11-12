@@ -265,7 +265,10 @@ Q5_plot <- Q5_data |>
   theme_default +
   theme(
     axis.text.x = element_text(angle = 45, hjust = .65, vjust = .75),
-    legend.position = "bottom")
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(3, "mm"))
   
 
 # make box plot to identify spread
