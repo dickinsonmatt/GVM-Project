@@ -7,7 +7,7 @@ output: pdf_document
 
 # Data Import
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 ```{r packages, include = FALSE, message = FALSE, warning = FALSE}
@@ -17,6 +17,8 @@ library(flextable)
 library(ggthemes)
 library(kableExtra)
 library(forcats)
+library(htmltools)
+library(webshot)
 ```
 
 
@@ -38,10 +40,17 @@ age_group_nums <- gvm_data |>
   group_by(age) |>
   summarize(number_in_age_group = n())
 
-flextable(age_group_nums, cwidth = 3) |>
-  autofit()
+age_table <- age_group_nums |>
+  rename(Age = age, "Number in category" = number_in_age_group) |>
+  flextable() |>
+  width(
+    j = "Number in category",
+    width = 1.5
+  )
 
 gvm_data$age <- as.factor(gvm_data$age)
+
+age_table
 ```
 
 ```{r setting globally theme, include = FALSE}
@@ -94,8 +103,9 @@ Q1_data <- gvm_data |>
   mutate(category_percent = (count/num_in_category)*100)
 ```
 
+
 ```{r Question 1 plot}
-Q1_data |>
+Q1_plot <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   coord_flip() +
@@ -110,13 +120,21 @@ Q1_data |>
   theme_default +
   theme(panel.grid.major.y = element_blank(),
         panel.grid.major.x = element_line())
+
+print(Q1_plot)
 ```
 
 
-## Question 2
-Asks about ....
-```{r Question 2}
+Here are the counts per each category for Question 1.
+```{r Question 1 counts}
+tab_q1 <- Q1_numbers |> 
+  rename(Location = location, "Count in category" = num_in_category) |> 
+  flextable() |>
+  width(
+    j = "Location",
+    width = 1.5)
 
+tab_q1
 ```
 
 
@@ -125,7 +143,7 @@ Asks `How many PRINT issues have you read within the last year?` and is single s
 ```{r Question 3 data}
 Q3_numbers <- gvm_data |>
   group_by(num_issues) |>
-  summarize(number = n())
+  summarize(num_in_category = n())
 
 Q3_data <- gvm_data |>
   select(age, num_issues) |>
@@ -135,12 +153,12 @@ Q3_data <- gvm_data |>
   left_join(Q3_numbers) |>
   mutate(
     age_percent = (count/number_in_age_group)*100,
-    issues_percent = (count/number)*100)
+    issues_percent = (count/num_in_category)*100)
 ```
 
 
 ```{r Question 3 plot}
-Q3_data |>
+Q3_plot <- Q3_data |>
   ggplot(aes((num_issues), issues_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d() +
@@ -152,7 +170,20 @@ Q3_data |>
     title = "How many PRINT issues have you read within the last year?"
   ) + 
   theme_default
+
+print(Q3_plot)
 ```
+
+Here is a table of counts per category for Question 3.
+```{r Question 3 counts}
+tab_q3 <- Q3_numbers |> 
+  rename("Number of issues" = num_issues, "Count in category" = num_in_category) |>
+  flextable()
+
+tab_q3
+```
+
+
 
 ## Question 5 
 Asks `To what extent do you agree or disagree with these statements about PRINTED issues of Grand Valley Magazine?` and is a likert matrix, where a score of `1` means `Strongly Disagree` and `5` means `Strongly Agree.`
@@ -170,12 +201,12 @@ The questions are:
 
 
 ```{r Question 5 data}
-Q5_numbers_1 <- gvm_data |>
+Q5_numbers <- gvm_data |>
   select(starts_with("print_")) |>
   pivot_longer(starts_with("print_"), names_to = "category", values_to = "score") |>
   mutate(category = str_to_title(str_remove_all(str_replace_all(str_replace_all(category, "print_", ""), "_", " "), "likert"))) |>
   group_by(category, score) |>
-  summarize(total_with_score = n())
+  summarize(number_selction = n())
 
 Q5_data <- gvm_data |>
   select(age, starts_with("print_")) |>
@@ -183,10 +214,10 @@ Q5_data <- gvm_data |>
   mutate(category = str_to_title(str_remove_all(str_replace_all(str_replace_all(category, "print_", ""), "_", " "), "likert"))) |>
   group_by(age, category, score) |>
   summarise(number = n()) |>
-  left_join(Q5_numbers_1) |>
+  left_join(Q5_numbers) |>
   left_join(age_group_nums) |>
   mutate(
-    category_score_percent = (number/total_with_score)*100,
+    category_score_percent = (number/number_selction)*100,
     category_age_percent = (number/number_in_age_group)*100,
     score = as.factor(case_when(
       score == 1 ~ "Strongly Disagree",
@@ -201,7 +232,7 @@ Q5_data$score <- factor(Q5_data$score, levels = c("Strongly Disagree", "Disagree
 
 
 ```{r Question 5 plot}
-Q5_data |> 
+Q5_plot <- Q5_data |> 
   ggplot(aes(category, category_age_percent, fill = as.factor(score))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d(direction = -1) +
@@ -222,7 +253,23 @@ Q5_data |>
 # make box plot to identify spread
   # no because it was an interval scale
 # proportion in each age group
+
+print(Q5_plot)
 ```
+
+```{r Question 5 counts}
+tab_q5 <- Q5_numbers |>
+  rename(Type = category, Score = score, "Number in category" = number_selction) |>
+  flextable() |>
+  width(
+    j = "Number in category",
+    width = 1.25
+  )
+
+tab_q5
+```
+
+
 
 ## Question 7
 Asks `How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?`
@@ -230,7 +277,7 @@ Asks `How many articles have you read on the Grand Valley Magazine WEBSITE in th
 ```{r Question 7 data}
 Q7_numbers <- gvm_data |>
   group_by(num_articles) |>
-  summarize(number = n())
+  summarize(num_in_category = n())
 
 Q7_data <- gvm_data |>
   select(age, num_articles) |>
@@ -240,7 +287,7 @@ Q7_data <- gvm_data |>
   left_join(Q7_numbers) |>
   mutate(
     age_percent = (count/number_in_age_group)*100,
-    articles_percent = (count/number)*100) 
+    articles_percent = (count/num_in_category)*100) 
 
 # Q7_data |>
 #   # filter(age == "17-24") |>
@@ -251,7 +298,7 @@ Q7_data <- gvm_data |>
 ```
 
 ```{r Question 7 plot}
-Q7_data |> 
+Q7_plot <- Q7_data |> 
   ggplot(aes(as.factor(num_articles), articles_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d() +
@@ -264,7 +311,25 @@ Q7_data |>
     caption = "Note: 15 indicates 10+ articles"
   ) +
   theme_default
+
+print(Q7_plot)
 ```
+
+
+Here is a table of number of articles per category for question 7.
+```{r Question 7 counts}
+tab_q7 <- Q7_numbers |> 
+  rename("Number of articles" = num_articles, "Count in category" = num_in_category) |>
+  flextable() |>
+  width(
+    j = "Number of articles",
+    width = 1
+  )
+
+tab_q7
+```
+
+
 
 ## Question 9
 Asks `Would you read Grand Valley Magazine if it was offered as a WEBSITE version only?`
@@ -277,7 +342,7 @@ Q9_numbers <- gvm_data |>
            TRUE ~ website_only
          )) |>
   group_by(website_only) |>
-  summarize(number = n())
+  summarize(num_in_category = n())
   
 Q9_data <- gvm_data |>
   select(age, website_only) |>
@@ -290,11 +355,11 @@ Q9_data <- gvm_data |>
            TRUE ~ website_only
          )) |>
   left_join(Q9_numbers) |>
-  mutate(category_percent = (count/number)*100)
+  mutate(category_percent = (count/num_in_category)*100)
 ```
 
 ```{r Question 9 plot}
-Q9_data |>
+Q9_plot <- Q9_data |>
   ggplot(aes(forcats::fct_rev(as.factor(website_only)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d() +
@@ -315,7 +380,26 @@ Q9_data |>
 # divide by total number of people in that CATEGORY
 # post hoc to find differences
 
+print(Q9_plot)
 ```
+
+
+Here is a table of counts for question 9.
+```{r Question 9 counts}
+tab_q9 <- Q9_numbers |> 
+  rename("Read GVM if website only" = website_only, "Count in category" = num_in_category) |>
+  flextable() |>
+  width(
+    j = "Read GVM if website only",
+    width = 1.5
+  )
+
+
+tab_q9
+```
+
+
+
 
 ## Question 11
 Asks `What actions have you taken as a result of reading Grand Valley Magazine?` and was a mark all that apply.
@@ -333,7 +417,7 @@ Q11_numbers <- gvm_data |>
            TRUE ~ action
          )) |>
   group_by(action) |>
-  summarize(number = sum(selection, na.rm = TRUE))
+  summarize(num_in_category = sum(selection, na.rm = TRUE))
 
 Q11_data <- gvm_data |>
   select(age, starts_with("action_")) |>
@@ -351,12 +435,12 @@ Q11_data <- gvm_data |>
   left_join(Q11_numbers) |>
   mutate(age_percent = (count/number_in_age_group)*100,
          action = as.factor(action),
-         category_percent = (count/number)*100)
+         category_percent = (count/num_in_category)*100)
 ```
 
 
 ```{r Question 11 plot}
-Q11_data |>
+Q11_plot <- Q11_data |>
   filter(action != "None") |>
   ggplot(aes(fct_reorder(action, (category_percent)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
@@ -374,6 +458,90 @@ Q11_data |>
         panel.grid.major.x = element_line())
 
 # divide not by num people in age but by num people in category
+print(Q11_plot)
 ```
 
+Table of counts per category for question 11.
+```{r Question 11 counts}
+tab_q11 <- Q11_numbers |> 
+  rename(Action = action, "Count in category" = num_in_category) |>
+  flextable(cwidth = 1.25, cheight = 1.25)
+
+tab_q11
+```
+
+
+# Exporting plots and tables
+```{r exporting plots, warning = FALSE}
+plot_list <- list(Q1_plot, Q3_plot, Q5_plot, Q7_plot, Q9_plot, Q11_plot)
+
+for (i in seq_along(plot_list)){
+  
+  plot_num = seq(1, 12, 2)[i]
+  
+  file_name_svg = paste0("Q", plot_num, "_plot", ".svg")
+  file_name_png = paste0("Q", plot_num, "_plot", ".png")
+  
+  ggsave(
+    filename=file_name_svg,
+    plot=plot_list[[i]],
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+  
+  ggsave(
+    filename=file_name_png,
+    plot=plot_list[[i]],
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+}
+```
+
+```{r exporting tables, message = FALSE, warning=FALSE, include=FALSE}
+count_tables <- list(tab_q1, tab_q3, tab_q5, tab_q7, tab_q9, tab_q11)
+
+for (i in seq_along(count_tables)){
+
+  table_num = seq(1, 12, 2)[i]
+
+  table_name = paste0("Q", table_num, "_table")
+
+  path_svg = paste0("~/MyR/GVM-Project/tables/", table_name, ".svg")
+  path_png = paste0("~/MyR/GVM-Project/tables/", table_name, ".png")
+
+
+  save_as_image(
+    count_tables[[i]],
+    path = path_svg)
+
+  save_as_image(
+    count_tables[[i]],
+    path = path_png)
+  
+  # print(table_name)
+  # print(path_svg)
+  # print(path_png)
+  # print(table_num)
+  
+  
+}
+
+save_as_image(
+  age_table,
+  path = "~/MyR/GVM-Project/tables/age_table.png"
+)
+
+save_as_image(
+  age_table,
+  path = "~/MyR/GVM-Project/tables/age_table.svg"
+)
+```
+
+```{r fake success table for pdf version}
+data.frame(
+  Plot = c("Question 1", "Question 3", "Question 5", "Question 7", "Question 9", "Question 11"),
+  Status = rep("Export Successful", 6)
+) |> flextable(cwidth = 1.5)
+```
 
