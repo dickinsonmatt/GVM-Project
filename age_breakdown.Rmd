@@ -119,7 +119,8 @@ Q1_plot <- Q1_data |>
   ) +
   theme_default +
   theme(panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_line())
+        panel.grid.major.x = element_line()) +
+  guides(fill = guide_legend(reverse=TRUE))
 
 print(Q1_plot)
 ```
@@ -169,7 +170,8 @@ Q3_plot <- Q3_data |>
     fill = "Age Group",
     title = "How many PRINT issues have you read within the last year?"
   ) + 
-  theme_default
+  theme_default +
+  guides(fill = guide_legend(reverse=TRUE))
 
 print(Q3_plot)
 ```
@@ -230,6 +232,15 @@ Q5_data <- gvm_data |>
 Q5_data$score <- factor(Q5_data$score, levels = c("Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"))
 ```
 
+```{r age labels}
+ages <- c(paste0("17-24 (n=", age_group_nums$number_in_age_group[1], ")"),
+        paste0("25-35 (n=", age_group_nums$number_in_age_group[2], ")"),
+        paste0("36-49 (n=", age_group_nums$number_in_age_group[3], ")"),
+        paste0("50-65 (n=", age_group_nums$number_in_age_group[4], ")"),
+        paste0("66+ (n=", age_group_nums$number_in_age_group[5], ")"))
+
+names(ages) <- c("17-24", "25-35", "36-49", "50-65", "66+")
+```
 
 ```{r Question 5 plot}
 Q5_plot <- Q5_data |> 
@@ -243,7 +254,9 @@ Q5_plot <- Q5_data |>
     fill = "Agreement",
     title = "To what extent do you agree or disagree with these statements about PRINTED \nissues of Grand Valley Magazine?"
   ) +
-  facet_grid(~age) +
+  facet_grid(
+    ~age, 
+    labeller = labeller(age = ages)) +
   theme_default +
   theme(
     axis.text.x = element_text(angle = 45, hjust = .65, vjust = .75),
@@ -310,7 +323,8 @@ Q7_plot <- Q7_data |>
     title = "How many articles have you read on the Grand Valley Magazine \nWEBSITE in the last year?",
     caption = "Note: 15 indicates 10+ articles"
   ) +
-  theme_default
+  theme_default +
+  guides(fill = guide_legend(reverse=TRUE))
 
 print(Q7_plot)
 ```
@@ -363,7 +377,7 @@ Q9_plot <- Q9_data |>
   ggplot(aes(forcats::fct_rev(as.factor(website_only)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d() +
-  scale_y_continuous(breaks = seq(0, 50, 5), expand = expansion(mult = c(0, .1))) +
+  scale_y_continuous(breaks = seq(0, 50, 5), expand = expansion(mult = c(0, 0.05))) +
   labs(
     y = "Percent",
     fill = "Age Group",
@@ -373,7 +387,9 @@ Q9_plot <- Q9_data |>
     axis.title.x = element_blank(),
     axis.text.x = element_text(angle = 45, hjust = 1),
     legend.position = "none") +
-  facet_grid(~age) +
+  facet_grid(
+    ~age, 
+    labeller = labeller(age = ages)) +
   theme_default
 
 # five by three chi-square test
@@ -455,7 +471,8 @@ Q11_plot <- Q11_data |>
   ) +
   theme_default +
   theme(panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_line())
+        panel.grid.major.x = element_line()) +
+  guides(fill = guide_legend(reverse=TRUE))
 
 # divide not by num people in age but by num people in category
 print(Q11_plot)
