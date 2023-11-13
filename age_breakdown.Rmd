@@ -306,9 +306,35 @@ Q7_data <- gvm_data |>
   summarize(count = n()) |>
   left_join(age_group_nums) |>
   left_join(Q7_numbers) |>
+  ungroup() |>
+  add_row(
+    age = c("17-24", "17-24", "17-24", "17-24"),
+    num_articles = c(8, 9, 10, 15),
+    count = c(0, 0, 0, 0),
+    number_in_age_group = rep(age_group_nums$number_in_age_group[1], 4),
+    num_in_category = c(1, 1, 1, 1)) |>
+  add_row(
+    age = c("25-35", "25-35", "25-35"),
+    num_articles = c(8, 9, 10),
+    count = c(0, 0, 0),
+    number_in_age_group = rep(age_group_nums$number_in_age_group[2], 3),
+    num_in_category = c(1, 1, 1)) |>
+  add_row(
+    age = c("36-49"),
+    num_articles = c(9),
+    count = c(0),
+    number_in_age_group = rep(age_group_nums$number_in_age_group[3], 1),
+    num_in_category = c(1)) |>
+  add_row(
+    age = c("66+"),
+    num_articles = c(9),
+    count = c(0),
+    number_in_age_group = rep(age_group_nums$number_in_age_group[5], 1),
+    num_in_category = c(1)) |>
   mutate(
     age_percent = (count/number_in_age_group)*100,
-    articles_percent = (count/num_in_category)*100) 
+    articles_percent = (count/num_in_category)*100) |>
+  arrange(age, num_articles)
 
 # Q7_data |>
 #   # filter(age == "17-24") |>
@@ -336,6 +362,8 @@ Q7_plot <- Q7_data |>
   theme_default 
 
 print(Q7_plot)
+
+# put in zeros for other age groups
 ```
 
 
@@ -384,7 +412,7 @@ Q9_data <- gvm_data |>
 ```{r Question 9 plot}
 Q9_plot <- Q9_data |>
   ggplot(aes(forcats::fct_rev(as.factor(website_only)), category_percent, fill = forcats::fct_rev(age))) +
-  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  geom_col(position = "dodge", color = "black", linewidth = .5) +
   scale_fill_viridis_d() +
   scale_y_continuous(breaks = seq(0, 50, 5), expand = expansion(mult = c(0, 0.05))) +
   labs(
@@ -405,7 +433,9 @@ Q9_plot <- Q9_data |>
 # divide by total number of people in that CATEGORY
 # post hoc to find differences
 
+
 print(Q9_plot)
+# make the border slightly thicker
 ```
 
 
