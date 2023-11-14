@@ -17,6 +17,7 @@ library(readr)
 library(flextable)
 library(ggthemes)
 library(likert)
+library(gridExtra)
 ```
 
 ```{r data import}
@@ -508,43 +509,88 @@ wl_format %>% plot()
 #Create data frame with the counts of each typ 
 where_read_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$where_read))
 
-#renaming
+#renaming columns
 where_read_by_age <- rename(where_read_by_age,'age'='Var1',
                                       'where_read'='Var2',
-                                      'Count'='Freq') %>% 
-                     mutate(percent = (Count/sum(Count))*100)
+                                      'Count'='Freq')
+
+#defining a function to calculate row percentage of each age group
+perc_func<- function(mydf,myvar) {
+  mydf <- mydf %>%
+  group_by(age, {{myvar}}) %>%
+  summarize(Sum_Count = sum(Count)) %>%
+  group_by(age) %>%
+  mutate(percent = Sum_Count / sum(Sum_Count) * 100)
+  return(mydf)
+}
+
+#calculate percentage (each age group sum percentage=100)
+where_read_by_age <- perc_func(where_read_by_age,where_read)
+
 
 #Plotting 
-where_read_by_age %>% ggplot(aes(x=where_read, y=percent, fill=age)) +
-  geom_bar(stat = 'identity', position='dodge') +
-  labs(title = "(Q2) Where Read by Age",
+#where_read_by_age %>% ggplot(aes(x=where_read, y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', position='dodge') +
+#  labs(title = "(Q2) Where Read by Age",
+#       y = "Percent",
+#       fill = "Age") +
+#  theme(axis.title.y = element_blank()) +
+ # coord_flip() +
+ # scale_fill_viridis_d()
+
+
+agep_q2<-where_read_by_age %>% ggplot(aes(x=where_read, y=percent, fill=as.factor(where_read))) +
+  geom_bar(stat = 'identity', position='dodge', color='black') +
+  labs(title = "Where do you read GVM? (Q2)",
        y = "Percent",
-       fill = "Age") +
-  theme(axis.title.y = element_blank()) +
-  coord_flip() +
-  scale_fill_viridis_d()
+       fill = "Source:",
+       x="") +
+  facet_grid(~age) +
+  scale_fill_viridis_d(direction = -1) +
+  theme(axis.text.x = element_blank(),
+        legend.position = "bottom") 
+  
+agep_q2
 ```
 
 # Engagement bt Age
-```{r Engagement by Age}
+```{r Engagement by Age, warning=FALSE}
 #Create data frame with the counts of each typ 
 engagement_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$gvsu_engagement))
 
 #renaming
 engagement_by_age <- rename(engagement_by_age,'age'='Var1',
                                       'gvsu_engagement'='Var2',
-                                      'Count'='Freq') %>% 
-                     mutate(percent = (Count/sum(Count))*100)
+                                      'Count'='Freq') #%>% 
+                     #mutate(percent = (Count/sum(Count))*100)
+
+#calculate percentage (each age group sum percentage=100)
+engagement_by_age <- perc_func(engagement_by_age,gvsu_engagement)
 
 #Plotting
-engagement_by_age %>% ggplot(aes(x=gvsu_engagement, y=percent, fill=age)) +
-  geom_bar(stat = 'identity', position='dodge') +
-  labs(title = "More Likley to Engage in Events/Activities by Age",
-       y = "Percent",
-       fill = "Age") +
-  theme(axis.title.y = element_blank()) +
-  coord_flip() +
-  scale_fill_viridis_d()
+#engagement_by_age %>% ggplot(aes(x=gvsu_engagement, y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', position='dodge') +
+#  labs(title = "More Likley to Engage in Events/Activities by Age",
+#       y = "Percent",
+#       fill = "Age") +
+#  theme(axis.title.y = element_blank()) +
+#  coord_flip() +
+#  scale_fill_viridis_d()
+
+
+agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Disagree","Neutral","Agree"), 
+                                 y=percent, fill=as.factor(age))) +
+  geom_bar(stat = 'identity', position='dodge', color='black') +
+  labs(title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)",
+      y = "Percent",
+      fill = "Age",
+      x = "") +
+  facet_grid(~age) +
+  scale_fill_viridis_d(direction = -1) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "none")
+
+agep_q6
 ```
 
 # drive_to_website by age
@@ -555,18 +601,33 @@ drive_to_website_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$drive_to_
 #renaming
 drive_to_website_by_age <- rename(drive_to_website_by_age,'age'='Var1',
                                       'drive_to_website'='Var2',
-                                      'Count'='Freq') %>% 
-                     mutate(percent = (Count/sum(Count))*100)
+                                      'Count'='Freq') #%>% 
+                     #mutate(percent = (Count/sum(Count))*100)
+
+drive_to_website_by_age <- perc_func(drive_to_website_by_age,drive_to_website)
 
 #Plotting
-drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=age)) +
-  geom_bar(stat = 'identity', position='dodge') +
+#drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', position='dodge') +
+#  labs(title = "Driver of Website Visitation by Age (Q8)",
+#       y = "Percent",
+#       fill = "Age") +
+#  theme(axis.title.y = element_blank()) +
+#  coord_flip() +
+#  scale_fill_viridis_d()
+
+agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=as.factor(age))) +
+  geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "Driver of Website Visitation by Age (Q8)",
        y = "Percent",
-       fill = "Age") +
-  theme(axis.title.y = element_blank()) +
-  coord_flip() +
-  scale_fill_viridis_d()
+       fill = "Age",
+       x="") +
+  facet_grid(~age) +
+  scale_fill_viridis_d(direction = -1) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "none") 
+
+agep_q8
 ```
 
 # website_engagement by age
@@ -576,18 +637,33 @@ website_engagement_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$website
 #renaming
 website_engagement_by_age <- rename(website_engagement_by_age,'age'='Var1',
                                       'website_engagement'='Var2',
-                                      'Count'='Freq') %>% 
-                     mutate(percent = (Count/sum(Count))*100)
+                                      'Count'='Freq') #%>% 
+                     #mutate(percent = (Count/sum(Count))*100)
+
+website_engagement_by_age <- perc_func(website_engagement_by_age,website_engagement)
 
 #Plotting 
-website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=age)) +
-  geom_bar(stat = 'identity', position='dodge') +
-  labs(title = "How to Make Website More Engaging by Age",
+#website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', position='dodge') +
+#  labs(title = "How to Make Website More Engaging by Age",
+#       y = "Percent",
+#       fill = "Age") +
+#  theme(axis.title.y = element_blank()) +
+#  coord_flip() +
+#  scale_fill_viridis_d()
+
+agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=as.factor(age))) +
+  geom_bar(stat = 'identity', position='dodge', color='black') +
+  labs(title = "How to Make Website More Engaging by Age (Q10)",
        y = "Percent",
-       fill = "Age") +
-  theme(axis.title.y = element_blank()) +
-  coord_flip() +
-  scale_fill_viridis_d()
+       fill = "Age",
+       x="") +
+  facet_grid(~age) +
+  scale_fill_viridis_d(direction = -1) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "none") 
+
+agep_q10
 ```
 
 # Opting by age
@@ -598,20 +674,38 @@ opting_by_age <- as.data.frame(table(gvm_clean$age,gvm_clean$opting))
 #renaming
 opting_by_age <- rename(opting_by_age,'age'='Var1',
                                       'opting'='Var2',
-                                      'Count'='Freq') %>% 
-                     mutate(percent = (Count/sum(Count))*100)
+                                      'Count'='Freq') #%>% 
+                     #mutate(percent = (Count/sum(Count))*100)
+
+opting_by_age <- perc_func(opting_by_age,opting)
 
 #Plotting 
-opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=age)) +
-  geom_bar(stat = 'identity', position='dodge') +
-  labs(title = "Opting into Print Issues by Age",
+#opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', position='dodge') +
+#  labs(title = "Opting into Print Issues by Age",
+#       y = "Percent",
+#       fill = "Age") +
+#  theme(axis.title.y = element_blank()) +
+#  coord_flip() +
+#  scale_fill_viridis_d()
+
+agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=as.factor(age))) +
+  geom_bar(stat = 'identity', position='dodge', color='black') +
+  labs(title = "Opting into Print Issues by Age (Q12)",
        y = "Percent",
-       fill = "Age") +
-  theme(axis.title.y = element_blank()) +
-  coord_flip() +
-  scale_fill_viridis_d()
+       fill = "Age",
+       x="") +
+  facet_grid(~age) +
+  scale_fill_viridis_d(direction = -1) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position = "none") 
+
+agep_q12
 ```
 
+```{r printing all even age graphs}
+grid.arrange(agep_q2,agep_q6,agep_q8,agep_q10,agep_q12,ncol=3)
+```
 
 
 
