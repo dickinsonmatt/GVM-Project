@@ -578,19 +578,31 @@ engagement_by_age <- perc_func(engagement_by_age,gvsu_engagement)
 #  scale_fill_viridis_d()
 
 
-agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Disagree","Neutral","Agree"), 
-                                 y=percent, fill=as.factor(age))) +
+agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
+                                 y=percent, fill=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)",
       y = "Percent",
-      fill = "Age",
+      fill = "Answer",
       x = "") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position = "none")
+  theme(axis.text.x = element_blank(),
+        legend.position = "bottom") 
 
-agep_q6
+
+agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
+                                 y=percent, fill=age)) +
+  geom_bar(stat = 'identity', color='black') +
+  coord_flip() +
+  theme(axis.title.y = element_blank()) +
+  labs(fill = "Answer",
+       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
+  scale_fill_viridis_d(direction = -1)
+
+#showing both plots
+grid.arrange(agep_q6,agep_q6_sango,ncol=2)
+
 ```
 
 # drive_to_website by age
@@ -616,16 +628,17 @@ drive_to_website_by_age <- perc_func(drive_to_website_by_age,drive_to_website)
 #  coord_flip() +
 #  scale_fill_viridis_d()
 
-agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=as.factor(age))) +
+agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=as.factor(drive_to_website))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "Driver of Website Visitation by Age (Q8)",
        y = "Percent",
-       fill = "Age",
+       fill = "Answer",
        x="") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position = "none") 
+  theme(axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        legend.position = "bottom") 
 
 agep_q8
 ```
@@ -652,16 +665,17 @@ website_engagement_by_age <- perc_func(website_engagement_by_age,website_engagem
 #  coord_flip() +
 #  scale_fill_viridis_d()
 
-agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=as.factor(age))) +
+agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=website_engagement)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "How to Make Website More Engaging by Age (Q10)",
        y = "Percent",
-       fill = "Age",
+       fill = "Answer",
        x="") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position = "none") 
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "bottom") 
 
 agep_q10
 ```
@@ -689,7 +703,7 @@ opting_by_age <- perc_func(opting_by_age,opting)
 #  coord_flip() +
 #  scale_fill_viridis_d()
 
-agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=as.factor(age))) +
+agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "Opting into Print Issues by Age (Q12)",
        y = "Percent",
@@ -697,8 +711,9 @@ agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=as.factor(age
        x="") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position = "none") 
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "bottom") 
 
 agep_q12
 ```
