@@ -104,7 +104,7 @@ Q1_data <- gvm_data |>
 ```
 
 
-```{r Question 1 plot}
+```{r Question 1 100% by category}
 Q1_plot <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
@@ -124,7 +124,42 @@ Q1_plot <- Q1_data |>
         panel.grid.major.x = element_line()) +
   guides(fill = guide_legend(reverse=TRUE))
 
-print(Q1_plot)
+print(Q1_plot_100_cat)
+```
+
+```{r Question 1 100% by age}
+Q1_plot_100_age <- Q1_data |>
+  ggplot(aes(fct_reorder(location, (num_in_category)), age_percent, fill = forcats::fct_rev(age))) +
+  geom_col(color = "black", linewidth = .1) +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.1))) +
+  labs(
+    x = "Location",
+    y = "Percent",
+    title = "Where do you acquire most of your information about GV?",
+    fill = "Age Group"
+  ) +
+  theme_default +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line()) +
+  guides(fill = guide_legend(reverse=TRUE))
+
+print(Q1_plot_100_age)
+```
+```{r Question 1 table}
+Q1_data |>
+  select(age, location, category_percent) |>
+  mutate(category_percent = round(category_percent, 2)) |>
+  pivot_wider(names_from = "location", values_from = "category_percent") |>
+  flextable()
+
+Q1_data |>
+  select(age, location, age_percent) |>
+  mutate(age_percent = round(age_percent, 2)) |>
+  pivot_wider(names_from = "location", values_from = "age_percent") |>
+  flextable()
 ```
 
 
@@ -247,9 +282,10 @@ names(ages) <- c("17-24", "25-35", "36-49", "50-65", "66+")
 
 ```{r Question 5 plot}
 Q5_plot <- Q5_data |> 
-  ggplot(aes(category, category_age_percent, fill = as.factor(score))) +
+  ggplot(aes(category, category_age_percent, fill = forcats::fct_rev(as.factor(score)))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
-  scale_fill_viridis_d(direction = -1) +
+  # scale_fill_viridis_d(direction = -1) +
+  scale_fill_gdocs() +
   scale_y_continuous(
     expand = expansion(mult = c(0, .1)),
     breaks = seq(0, 80, 10)) +
@@ -336,13 +372,15 @@ Q7_data <- gvm_data |>
     articles_percent = (count/num_in_category)*100) |>
   arrange(age, num_articles)
 
-# Q7_data |>
-#   # filter(age == "17-24") |>
-#   filter(num_articles == 0) |>
-#   # pull(age_percent) |>
-#   pull(articles_percent) |>
-#   sum()
+
 ```
+
+```{r Question 7 inspect, echo = FALSE, include = FALSE}
+Q7_data |>
+  group_by(age) |>
+  summarize(n = n())
+```
+
 
 ```{r Question 7 plot}
 Q7_plot <- Q7_data |> 
@@ -365,6 +403,10 @@ print(Q7_plot)
 
 # put in zeros for other age groups
 ```
+
+
+
+
 
 
 Here is a table of number of articles per category for question 7.
@@ -409,27 +451,22 @@ Q9_data <- gvm_data |>
   mutate(category_percent = (count/num_in_category)*100)
 ```
 
-<<<<<<< HEAD
-Q9_data |>
-  ggplot(aes(forcats::fct_rev(as.factor(website_only)), percent, fill = forcats::fct_rev(age))) +
-  geom_col(position = "dodge", color = "black") +
-=======
+
 ```{r Question 9 plot}
 Q9_plot <- Q9_data |>
-  ggplot(aes(forcats::fct_rev(as.factor(website_only)), category_percent, fill = forcats::fct_rev(age))) +
+  ggplot(aes(forcats::fct_rev(as.factor(website_only)), age_percent, fill = forcats::fct_rev(website_only))) +
   geom_col(position = "dodge", color = "black", linewidth = .5) +
->>>>>>> 146a5efe82933665969784a3a03b89648f18df54
-  scale_fill_viridis_d() +
+  scale_fill_viridis_d(direction  = -1) +
   scale_y_continuous(breaks = seq(0, 50, 5), expand = expansion(mult = c(0, 0.05))) +
   labs(
     y = "Percent",
-    fill = "Age Group",
+    fill = "Agreement",
     title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?"
   ) +
   theme(
     axis.title.x = element_blank(),
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    legend.position = "none") +
+    axis.text.x = element_blank(),
+    legend.position = "bottom") +
   facet_grid(
     ~age, 
     labeller = labeller(age = ages)) +
