@@ -104,7 +104,7 @@ Q1_data <- gvm_data |>
 ```
 
 
-```{r Question 1 100% by category}
+```{r Question 1 by category}
 Q1_plot <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
@@ -124,10 +124,10 @@ Q1_plot <- Q1_data |>
         panel.grid.major.x = element_line()) +
   guides(fill = guide_legend(reverse=TRUE))
 
-print(Q1_plot_100_cat)
+print(Q1_plot)
 ```
 
-```{r Question 1 100% by age}
+```{r Question 1 by age}
 Q1_plot_100_age <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), age_percent, fill = forcats::fct_rev(age))) +
   geom_col(color = "black", linewidth = .1) +
