@@ -53,12 +53,25 @@ gvm_data$age <- as.factor(gvm_data$age)
 age_table
 ```
 
-```{r setting globally theme, include = FALSE}
+```{r setting global theme, include = FALSE}
 theme_set(theme_bw())
 theme_default <- theme(
     axis.ticks = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank())
+```
+
+```{r age labels}
+ages <- c(paste0("17-24 (n=", age_group_nums$number_in_age_group[1], ")"),
+        paste0("25-35 (n=", age_group_nums$number_in_age_group[2], ")"),
+        paste0("36-49 (n=", age_group_nums$number_in_age_group[3], ")"),
+        paste0("50-65 (n=", age_group_nums$number_in_age_group[4], ")"),
+        paste0("66+ (n=", age_group_nums$number_in_age_group[5], ")"))
+
+names(ages) <- c("17-24", "25-35", "36-49", "50-65", "66+")
+
+# to use these labels use this line of code
+# facet_grid(~age, labeller = labeller(age = ages))
 ```
 
 
@@ -105,7 +118,7 @@ Q1_data <- gvm_data |>
 
 
 ```{r Question 1 by category}
-Q1_plot <- Q1_data |>
+Q1_plot_original <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   coord_flip() +
@@ -124,17 +137,18 @@ Q1_plot <- Q1_data |>
         panel.grid.major.x = element_line()) +
   guides(fill = guide_legend(reverse=TRUE))
 
-print(Q1_plot)
+print(Q1_plot_original)
 ```
 
 ```{r Question 1 by age}
-Q1_plot_100_age <- Q1_data |>
+Q1_plot<- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), age_percent, fill = forcats::fct_rev(age))) +
-  geom_col(color = "black", linewidth = .1) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
   coord_flip() +
   scale_fill_viridis_d() +
   scale_y_continuous(
-    expand = expansion(mult = c(0, 0.1))) +
+    expand = expansion(mult = c(0, 0.1)),
+    breaks = seq(0, 80, 10)) +
   labs(
     x = "Location",
     y = "Percent",
@@ -146,8 +160,10 @@ Q1_plot_100_age <- Q1_data |>
         panel.grid.major.x = element_line()) +
   guides(fill = guide_legend(reverse=TRUE))
 
-print(Q1_plot_100_age)
+print(Q1_plot)
 ```
+
+
 ```{r Question 1 table}
 Q1_data |>
   select(age, location, category_percent) |>
@@ -233,7 +249,8 @@ Q3_plot_age <- Q3_data |>
 
 print(Q3_plot_age)
 ```
-```{r Question 3 plot faceted age}
+
+```{r Question 3 plot faceted age USING}
 Q3_plot <- Q3_data |>
   ggplot(aes((num_issues), age_percent, fill = as.factor(num_issues))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
@@ -314,15 +331,6 @@ Q5_data <- gvm_data |>
 Q5_data$score <- factor(Q5_data$score, levels = c("Strongly Disagree", "Disagree", "Neutral", "Agree", "Strongly Agree"))
 ```
 
-```{r age labels}
-ages <- c(paste0("17-24 (n=", age_group_nums$number_in_age_group[1], ")"),
-        paste0("25-35 (n=", age_group_nums$number_in_age_group[2], ")"),
-        paste0("36-49 (n=", age_group_nums$number_in_age_group[3], ")"),
-        paste0("50-65 (n=", age_group_nums$number_in_age_group[4], ")"),
-        paste0("66+ (n=", age_group_nums$number_in_age_group[5], ")"))
-
-names(ages) <- c("17-24", "25-35", "36-49", "50-65", "66+")
-```
 
 ```{r Question 5 plot}
 Q5_plot <- Q5_data |> 
@@ -350,9 +358,35 @@ Q5_plot <- Q5_data |>
     legend.key.size = unit(3, "mm"))
   
 
-# make box plot to identify spread
-  # no because it was an interval scale
-# proportion in each age group
+print(Q5_plot)
+```
+
+
+```{r Question 5 NEW IDEA ALERT}
+Q5_plot <- Q5_data |> 
+  ggplot(aes(category, category_age_percent, fill = forcats::fct_rev(as.factor(score)))) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  # scale_fill_viridis_d(direction = -1) +
+  scale_fill_colorblind() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, .1)),
+    breaks = seq(0, 80, 10)) +
+  labs(
+    x = "Question Type",
+    y = "Percent", 
+    fill = "Response",
+    title = "To what extent do you agree or disagree with these statements about PRINTED \nissues of Grand Valley Magazine?"
+  ) +
+  facet_grid(
+    ~age, 
+    labeller = labeller(age = ages)) +
+  theme_default +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = .65, vjust = .75),
+    legend.position = "bottom",
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(3, "mm"))
+  
 
 print(Q5_plot)
 ```
@@ -472,6 +506,12 @@ Q7_plot <- Q7_data |>
 print(Q7_plot)
 ```
 
+```{r Question 7 boxplot}
+gvm_data |>
+  filter(!(num_articles == 15)) |>
+  ggplot(aes(age, num_articles, fill = age)) +
+  geom_boxplot()
+```
 
 
 
@@ -523,10 +563,10 @@ Q9_plot <- Q9_data |>
   ggplot(aes(forcats::fct_rev(as.factor(website_only)), age_percent, fill = forcats::fct_rev(website_only))) +
   geom_col(position = "dodge", color = "black", linewidth = .5) +
   scale_fill_viridis_d(direction  = -1) +
-  scale_y_continuous(breaks = seq(0, 50, 5), expand = expansion(mult = c(0, 0.05))) +
+  scale_y_continuous(breaks = seq(0, 55, 5), expand = expansion(mult = c(0, 0.075))) +
   labs(
     y = "Percent",
-    fill = "Agreement",
+    fill = "Response",
     title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?"
   ) +
   theme(
@@ -609,7 +649,7 @@ Q11_plot <- Q11_data |>
   ggplot(aes(fct_reorder(action, (category_percent)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_y_continuous(
-    expand = expansion(mult=c(0, 0.05)),
+    expand = expansion(mult=c(0, 0.12)),
     breaks = seq(0, 50, 5)) +
   coord_flip() +
   scale_fill_viridis_d() +
