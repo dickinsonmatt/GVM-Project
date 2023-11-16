@@ -1,0 +1,33 @@
+---
+title: "Grand Valley Magazine Project Chi Square Testing"
+author: "Matthew Dickinson & Foster Thorburn"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+* Question 1
+
+** Multi-select cannot do chi-square
+
+* Question 3
+
+** How many PRINT issues have you read within the last year?
+
+
+* Question 5
+
+** Likert cannot do chi-square
+
+* Question 7
+
+** How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?
+
+
+* Question 9
+
+** Would you read Grand Valley Magazine if it was offered as a WEBSITE version only?
+
+
+* Question 11
+
+** Multi-select cannot do chi-square
