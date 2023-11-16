@@ -498,19 +498,7 @@ website_likert_df <- website_likert_df %>% rename(
 
 
 
-#website_likert_df <- website_likert_df %>% group_by(age,`I enjoy reading GVM website`) %>% summarize(n())
-
-
-
-
-#website_likert_df <- website_likert_df %>%
-#  pivot_wider(names_from = c(`I enjoy reading GVM website`,
-#                              `The website is easy to navigate`,
-#                             `Design & Visual Elements aid in Understanding & Enjoyment`,
-#                             `I feel more connected to GVSU after reading GVM website`,
-#                             `Reading GVM website makes me proud to be part of GVSU community`,
-#                              age),
-#              values_from = )
+#insert graphic from paint
 
 
 
