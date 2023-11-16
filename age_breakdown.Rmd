@@ -195,8 +195,8 @@ Q3_data <- gvm_data |>
 ```
 
 
-```{r Question 3 plot}
-Q3_plot <- Q3_data |>
+```{r Question 3 plot per issue}
+Q3_plot_original <- Q3_data |>
   ggplot(aes((num_issues), issues_percent, fill = age)) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d(direction = -1) +
@@ -210,6 +210,50 @@ Q3_plot <- Q3_data |>
     title = "How many PRINT issues have you read within the last year?"
   ) + 
   theme_default
+
+print(Q3_plot_original)
+```
+
+
+```{r Question 3 plot per age}
+Q3_plot_age <- Q3_data |>
+  ggplot(aes((num_issues), age_percent, fill = age)) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  scale_fill_viridis_d(direction = -1) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.05)),
+    breaks = seq(0, 70, 10)) +
+  labs(
+    x = "Number of Issues",
+    y = "Percent",
+    fill = "Age Group",
+    title = "How many PRINT issues have you read within the last year?"
+  ) + 
+  theme_default
+
+print(Q3_plot_age)
+```
+```{r Question 3 plot faceted age}
+Q3_plot <- Q3_data |>
+  ggplot(aes((num_issues), age_percent, fill = as.factor(num_issues))) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  # scale_fill_viridis_d(direction = -1) +
+  scale_fill_colorblind() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.05)),
+    breaks = seq(0, 70, 10)) +
+  labs(
+    x = "Number of Issues",
+    y = "Percent",
+    fill = "Number of issues",
+    title = "How many PRINT issues have you read within the last year?"
+  ) + 
+  theme_default +
+  facet_grid(~age, 
+    labeller = labeller(age = ages)) +
+  theme(legend.position = "bottom",
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank())
 
 print(Q3_plot)
 ```
@@ -285,14 +329,14 @@ Q5_plot <- Q5_data |>
   ggplot(aes(category, category_age_percent, fill = forcats::fct_rev(as.factor(score)))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   # scale_fill_viridis_d(direction = -1) +
-  scale_fill_gdocs() +
+  scale_fill_colorblind() +
   scale_y_continuous(
     expand = expansion(mult = c(0, .1)),
     breaks = seq(0, 80, 10)) +
   labs(
     x = "Question Type",
     y = "Percent", 
-    fill = "Agreement",
+    fill = "Response",
     title = "To what extent do you agree or disagree with these statements about PRINTED \nissues of Grand Valley Magazine?"
   ) +
   facet_grid(
@@ -302,7 +346,6 @@ Q5_plot <- Q5_data |>
   theme(
     axis.text.x = element_text(angle = 45, hjust = .65, vjust = .75),
     legend.position = "bottom",
-    legend.title = element_blank(),
     legend.text = element_text(size = 8),
     legend.key.size = unit(3, "mm"))
   
@@ -382,9 +425,9 @@ Q7_data |>
 ```
 
 
-```{r Question 7 plot}
-Q7_plot <- Q7_data |> 
-  ggplot(aes(as.factor(num_articles), articles_percent, fill = age)) +
+```{r Question 7 plot original}
+Q7_plot_original <- Q7_data |> 
+  ggplot(aes(as.factor(num_articles), age_percent, fill = age)) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   scale_fill_viridis_d(direction = -1) +
   scale_y_continuous(
@@ -399,12 +442,35 @@ Q7_plot <- Q7_data |>
   ) +
   theme_default 
 
-print(Q7_plot)
-
-# put in zeros for other age groups
+print(Q7_plot_original)
+# I like with age percent better
 ```
 
 
+```{r Question 7 plot faceted}
+Q7_plot <- Q7_data |> 
+  ggplot(aes(as.factor(num_articles), age_percent, fill = as.factor(num_articles))) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  scale_fill_viridis_d(direction = -1) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.05)),
+    breaks = seq(0, 100, 10)) +
+  labs(
+    x = "Number of Articles",
+    y = "Percent",
+    fill = "Number of Articles",
+    title = "How many articles have you read on the Grand Valley Magazine \nWEBSITE in the last year?",
+    caption = "Note: 15 indicates 10+ articles"
+  ) +
+  theme_default +
+  theme(axis.title.x = element_blank(),
+        legend.position = "bottom",
+        axis.text.x = element_blank()) +
+  facet_grid(~age, 
+    labeller = labeller(age = ages))
+
+print(Q7_plot)
+```
 
 
 
