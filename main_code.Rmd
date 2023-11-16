@@ -574,17 +574,17 @@ agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree
 agep_q6
 
 #Sango suggestion for same question
-#agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
-#                                 y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', color='black') +
-#  coord_flip() +
-#  theme(axis.title.y = element_blank()) +
-#  labs(fill = "Response",
-#       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
-#  scale_fill_viridis_d(direction = -1)
+agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
+                                 y=percent, fill=age)) +
+  geom_bar(stat = 'identity', color='black') +
+  coord_flip() +
+  theme(axis.title.y = element_blank()) +
+ labs(fill = "Response",
+       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
+  scale_fill_viridis_d(direction = -1)
 
 #showing both plots
-#grid.arrange(agep_q6,agep_q6_sango,ncol=2)
+grid.arrange(agep_q6,agep_q6_sango,ncol=2)
 
 #we decided the left was superior
 
