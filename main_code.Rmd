@@ -18,6 +18,7 @@ library(flextable)
 library(ggthemes)
 library(likert)
 library(gridExtra)
+library(reshape2)
 ```
 
 ```{r data import}
@@ -161,7 +162,7 @@ length(which(gvm_clean$most_info_other == 1))
 )
 
 most_info_df <- data.frame(
-  answer = c("Emails from GVSU","Grand Valley Magazine Print Issues","Grand Valley Magazine Website","Other GVSU Publications","Local or National Media","Word of Mouth/Other Alumni","The Lanthorn","Social Media","Other"),
+  Response = c("Emails from GVSU","Grand Valley Magazine Print Issues","Grand Valley Magazine Website","Other GVSU Publications","Local or National Media","Word of Mouth/Other Alumni","The Lanthorn","Social Media","Other"),
   count = counts
 )
 ```
@@ -495,13 +496,24 @@ website_likert_df <- website_likert_df %>% rename(
   "I feel more connected to GVSU after reading GVM website" = website_connected_likert,
   "Reading GVM website makes me proud to be part of GVSU community" = website_proud_likert)
 
-#making all variables factors
-website_likert_df <- data.frame(lapply(website_likert_df, as.factor))
 
-#plotting likert 
-wl_format <- likert(website_likert_df[,1:5], grouping=website_likert_df[,6])
 
-wl_format %>% plot()
+#website_likert_df <- website_likert_df %>% group_by(age,`I enjoy reading GVM website`) %>% summarize(n())
+
+
+
+
+#website_likert_df <- website_likert_df %>%
+#  pivot_wider(names_from = c(`I enjoy reading GVM website`,
+#                              `The website is easy to navigate`,
+#                             `Design & Visual Elements aid in Understanding & Enjoyment`,
+#                             `I feel more connected to GVSU after reading GVM website`,
+#                             `Reading GVM website makes me proud to be part of GVSU community`,
+#                              age),
+#              values_from = )
+
+
+
 ```
 
 # Where_Read by Age
@@ -528,22 +540,12 @@ perc_func<- function(mydf,myvar) {
 where_read_by_age <- perc_func(where_read_by_age,where_read)
 
 
-#Plotting 
-#where_read_by_age %>% ggplot(aes(x=where_read, y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', position='dodge') +
-#  labs(title = "(Q2) Where Read by Age",
-#       y = "Percent",
-#       fill = "Age") +
-#  theme(axis.title.y = element_blank()) +
- # coord_flip() +
- # scale_fill_viridis_d()
-
-
-agep_q2<-where_read_by_age %>% ggplot(aes(x=where_read, y=percent, fill=as.factor(where_read))) +
+#ggplot
+agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website","Both","I don't read the GVM","Print issues"), y=percent, fill=fct_relevel(where_read,"GVM Website","Both","I don't read the GVM","Print issues"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "Where do you read GVM? (Q2)",
        y = "Percent",
-       fill = "Source:",
+       fill = "Response",
        x="") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
@@ -567,41 +569,36 @@ engagement_by_age <- rename(engagement_by_age,'age'='Var1',
 #calculate percentage (each age group sum percentage=100)
 engagement_by_age <- perc_func(engagement_by_age,gvsu_engagement)
 
-#Plotting
-#engagement_by_age %>% ggplot(aes(x=gvsu_engagement, y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', position='dodge') +
-#  labs(title = "More Likley to Engage in Events/Activities by Age",
-#       y = "Percent",
-#       fill = "Age") +
-#  theme(axis.title.y = element_blank()) +
-#  coord_flip() +
-#  scale_fill_viridis_d()
 
-
+#ggplot
 agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
                                  y=percent, fill=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)",
       y = "Percent",
-      fill = "Answer",
+      fill = "Response",
       x = "") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
         legend.position = "bottom") 
 
+agep_q6
 
-agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
-                                 y=percent, fill=age)) +
-  geom_bar(stat = 'identity', color='black') +
-  coord_flip() +
-  theme(axis.title.y = element_blank()) +
-  labs(fill = "Answer",
-       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
-  scale_fill_viridis_d(direction = -1)
+#Sango suggestion for same question
+#agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
+#                                 y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', color='black') +
+#  coord_flip() +
+#  theme(axis.title.y = element_blank()) +
+#  labs(fill = "Response",
+#       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
+#  scale_fill_viridis_d(direction = -1)
 
 #showing both plots
-grid.arrange(agep_q6,agep_q6_sango,ncol=2)
+#grid.arrange(agep_q6,agep_q6_sango,ncol=2)
+
+#we decided the left was superior
 
 ```
 
@@ -618,21 +615,12 @@ drive_to_website_by_age <- rename(drive_to_website_by_age,'age'='Var1',
 
 drive_to_website_by_age <- perc_func(drive_to_website_by_age,drive_to_website)
 
-#Plotting
-#drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', position='dodge') +
-#  labs(title = "Driver of Website Visitation by Age (Q8)",
-#       y = "Percent",
-#       fill = "Age") +
-#  theme(axis.title.y = element_blank()) +
-#  coord_flip() +
-#  scale_fill_viridis_d()
-
+#ggplot
 agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=as.factor(drive_to_website))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "Driver of Website Visitation by Age (Q8)",
        y = "Percent",
-       fill = "Answer",
+       fill = "Response",
        x="") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
@@ -655,21 +643,13 @@ website_engagement_by_age <- rename(website_engagement_by_age,'age'='Var1',
 
 website_engagement_by_age <- perc_func(website_engagement_by_age,website_engagement)
 
-#Plotting 
-#website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', position='dodge') +
-#  labs(title = "How to Make Website More Engaging by Age",
-#       y = "Percent",
-#       fill = "Age") +
-#  theme(axis.title.y = element_blank()) +
-#  coord_flip() +
-#  scale_fill_viridis_d()
 
+#ggplot
 agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=website_engagement)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "How to Make Website More Engaging by Age (Q10)",
        y = "Percent",
-       fill = "Answer",
+       fill = "Response",
        x="") +
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
@@ -693,24 +673,15 @@ opting_by_age <- rename(opting_by_age,'age'='Var1',
 
 opting_by_age <- perc_func(opting_by_age,opting)
 
-#Plotting 
-#opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', position='dodge') +
-#  labs(title = "Opting into Print Issues by Age",
-#       y = "Percent",
-#       fill = "Age") +
-#  theme(axis.title.y = element_blank()) +
-#  coord_flip() +
-#  scale_fill_viridis_d()
-
+#ggplot
 agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
   labs(title = "Opting into Print Issues by Age (Q12)",
        y = "Percent",
-       fill = "Age",
+       fill = "Response",
        x="") +
   facet_grid(~age) +
-  scale_fill_viridis_d(direction = -1) +
+  scale_fill_viridis_d(direction = 1) +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
         legend.position = "bottom") 
