@@ -77,6 +77,7 @@ gvm_clean <- gvm_main |>
 ```
 
 ```{r foster cleaning}
+
 gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
 
 #gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
@@ -120,6 +121,7 @@ gvm_clean <- gvm_clean %>%
     opting == '2' ~ 'No',
     TRUE ~ as.character(opting)
   ))
+
                                  
 gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
 ```
@@ -198,12 +200,11 @@ action_df <- action_df |> mutate(action_cols = str_replace_all(action_cols, "act
 ```{r avid_reader}
 gvm_clean$avid_reader <- as.factor(gvm_clean$num_articles)
 
-gvm_clean <- gvm_clean %>%
-  mutate(avid_reader = case_when(
-    avid_reader %in% c('0', '1', '2', '3', '4') ~ '0-4 Articles',
-    avid_reader %in% c('5', '6', '7', '8', '9', '10', '15') ~ '5-10+',
-    TRUE ~ as.character(avid_reader)
-  ))
+
+gvm_clean <- gvm_clean %>% mutate(avid_reader=case_when(
+  avid_reader %in% c(0, 1, 2, 3, 4) ~ "0-4 articles",
+  avid_reader %in% c(5, 6, 7, 8, 9, 10, 15) ~ "5-10+ Articles"))
+
 
 table(gvm_clean$avid_reader)
 ```
