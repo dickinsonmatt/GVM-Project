@@ -561,6 +561,7 @@ q4_1
 q4_2
   
 ```
+
 ```{r print likert}
 #filtering out responses of those who've read more than zero print issues
 print_likert_df_1 <- gvm_clean %>%
