@@ -118,7 +118,7 @@ Q1_data <- gvm_data |>
 
 
 ```{r Question 1 by category}
-Q1_plot_original <- Q1_data |>
+Q1_plot <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   coord_flip() +
@@ -137,11 +137,11 @@ Q1_plot_original <- Q1_data |>
         panel.grid.major.x = element_line()) +
   guides(fill = guide_legend(reverse=TRUE))
 
-print(Q1_plot_original)
+print(Q1_plot)
 ```
 
 ```{r Question 1 by age}
-Q1_plot<- Q1_data |>
+Q1_plot_age<- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), age_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   coord_flip() +
@@ -160,7 +160,7 @@ Q1_plot<- Q1_data |>
         panel.grid.major.x = element_line()) +
   guides(fill = guide_legend(reverse=TRUE))
 
-print(Q1_plot)
+print(Q1_plot_age)
 ```
 
 
@@ -743,6 +743,30 @@ save_as_image(
   age_table,
   path = "~/MyR/GVM-Project/tables/age_table.svg"
 )
+```
+
+
+```{r saving tables as csv, message = FALSE, warning = FALSE, include = FALSE}
+data_tables <- list(Q1_data, Q3_data, Q5_data, Q7_data, Q9_data, Q11_data)
+
+for (i in seq_along(data_tables)){
+
+  table_num = seq(1, 12, 2)[i]
+
+  table_name = paste0("Q", table_num, "_data")
+  
+  path = paste0("~/MyR/GVM-Project/chi-square-testing/", table_name, ".csv")
+
+  write_csv(
+    data_tables[[i]],
+    file = path
+  )
+  
+  # print(table_num)
+  # print(table_name)
+  
+  
+}
 ```
 
 ```{r fake success table for pdf version}
