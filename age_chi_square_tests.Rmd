@@ -5,29 +5,267 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
-* Question 1
+
+# Data Import
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(readr)
+library(flextable)
+library(tidymodels)
+```
+
+
+
+```{r data import}
+data_files <- list.files("~/MyR/GVM-Project/chi-square-testing")
+
+for (i in seq_along(data_files)){
+
+  table_num = seq(1, 12, 2)[i]
+
+  table_name = paste0("Q", table_num, "_data")
+  
+  path = paste0("~/MyR/GVM-Project/chi-square-testing/", table_name, ".csv")
+  
+  assign(table_name,
+         read_csv(
+           path,
+           col_names = TRUE))
+  
+}
+```
+
+
+# Questions
+
+
+## Question 1
 
 ** Multi-select cannot do chi-square
 
-* Question 3
+
+## Question 3
 
 ** How many PRINT issues have you read within the last year?
 
+```{r new Q3 df}
+Q3_df <- data.frame(
+  age = rep(Q3_data$age, Q3_data$count),
+  num_issues = rep(Q3_data$num_issues, Q3_data$count)
+)
 
-* Question 5
+Q3_df <- Q3_df |>
+  mutate(
+    age = as.factor(age),
+    num_issues = as.factor(num_issues)
+  )
+
+# table(Q3_df$age, Q3_df$num_issues)
+
+Q3_data |>
+  select(Age = age, num_issues, count) |>
+  pivot_wider(names_from = num_issues, values_from = count) |>
+  flextable() |>
+  add_header_lines(values = "Observed Counts")
+
+# dont worry about bootstrapping
+# use mutliple corrections 0.05/5C2 between age groups
+```
+
+```{r expected counts}
+Q3_data |>
+  mutate(expected_count = ((number_in_age_group)*(num_in_category))/sum(Q3_data$count)) |>
+  select(age, num_issues, observed = count, expected_count) |>
+  select(age, num_issues, expected_count) |>
+  pivot_wider(names_from = num_issues, values_from = expected_count) |>
+  flextable()|>
+  add_header_lines(values = "Expected Counts")
+```
+
+
+```{r Q3 Chi-Square}
+# Q3_data |>
+#   select(Age = age, num_issues, count) |>
+#   pivot_wider(names_from = num_issues, values_from = count) |>
+#   flextable()
+
+chisq_test(Q3_df, age ~ num_issues) |>
+  flextable() |>
+  set_formatter(p_value = function(x) {
+    formatC(x, format = "e", digits = 3)
+  }) 
+```
+```{r Q3 bootstrapping, warning = FALSE}
+total_times <- 5
+
+repititions <- 100
+sample_size <- 100
+proportion <- .35
+
+p_values <- c()
+
+
+for (i in 1:total_times){
+  for (i in 1:repititions){
+    
+    sample <- Q3_df |>
+      # slice_sample(n = sample_size)
+      slice_sample(prop = proportion, replace = FALSE)
+    
+    p_values[i] <- chisq_test(sample, age ~ num_issues) |>
+      pull(p_value)
+  }
+}
+
+mean(p_values)
+
+```
+The mean p-value after taking 500 samples with a proportion of .35 is `r mean(p_values)`.
+
+
+## Question 5
 
 ** Likert cannot do chi-square
 
-* Question 7
+
+## Question 7
 
 ** How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?
 
 
-* Question 9
+```{r new Q7 df}
+Q7_df <- data.frame(
+  age = rep(Q7_data$age, Q7_data$count),
+  num_articles = rep(Q7_data$num_articles, Q7_data$count)
+)
+
+Q7_df <- Q7_df |>
+  mutate(
+    age = as.factor(age),
+    num_articles = as.factor(num_articles)
+  )
+
+
+```
+
+```{r observed counts for Q7, warning = FALSE}
+Q7_data |>
+  mutate(
+    expected_count = ((number_in_age_group)*(num_in_category))/sum(Q7_data$count),
+    row = row_number()) |>
+  rename(observed = count) |>
+  select(age, num_articles, observed) |> 
+  pivot_wider(names_from = num_articles, values_from = observed) |> 
+  unnest() |> 
+  flextable()|>
+  add_header_lines(values = "Observed Counts") 
+
+# collapse c(0, 1-4, )
+```
+
+
+```{r expected counts for Q7, warning = FALSE}
+Q7_data |>
+  mutate(
+    expected_count = ((number_in_age_group)*(num_in_category))/sum(Q7_data$count),
+    row = row_number()) |>
+  rename(observed = count) |>
+  select(age, num_articles, expected_count) |> 
+  pivot_wider(names_from = num_articles, values_from = expected_count) |> 
+  unnest() |> 
+  flextable()|>
+  add_header_lines(values = "Expected Counts") 
+```
+
+
+
+```{r Q7 bootstrapping, warning=FALSE}
+total_times <- 5
+
+repititions <- 100
+sample_size <- 500
+proportion <- .65
+
+p_values <- c()
+
+
+for (i in 1:total_times){
+  for (i in 1:repititions){
+    
+    sample <- Q7_df |>
+      # slice_sample(n = sample_size)
+      slice_sample(prop = proportion)
+    
+    p_values[i] <- chisq_test(sample, age ~ num_articles) |>
+      pull(p_value)
+  }
+}
+
+
+mean(p_values)
+```
+
+
+
+
+## Question 9
 
 ** Would you read Grand Valley Magazine if it was offered as a WEBSITE version only?
 
+```{r Q9}
+Q9_df <- data.frame(
+  age = rep(Q9_data$age, Q9_data$count),
+  website_only = rep(Q9_data$website_only, Q9_data$count)
+)
 
-* Question 11
+Q9_df <- Q9_df |>
+  mutate(
+    age = as.factor(age),
+    website_only = as.factor(website_only)
+  )
+
+table(Q9_df$age, Q9_df$website_only)
+
+Q9_data |>
+  select(age, website_only, count) |>
+  pivot_wider(names_from = website_only, values_from = count) |>
+  flextable()
+```
+
+
+```{r Q9 bootstrapping}
+total_times <- 5
+
+repititions <- 100
+sample_size <- 500
+proportion <- .65
+
+p_values <- c()
+
+
+for (i in 1:total_times){
+  for (i in 1:repititions){
+    
+    sample <- Q9_df |>
+      # slice_sample(n = sample_size)
+      slice_sample(prop = proportion)
+    
+    p_values[i] <- chisq_test(sample, age ~ website_only) |>
+      pull(p_value)
+  }
+}
+
+
+mean(p_values)
+```
+
+
+
+## Question 11
 
 ** Multi-select cannot do chi-square
+
