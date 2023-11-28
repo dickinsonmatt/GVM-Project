@@ -650,6 +650,8 @@ where_read_by_age <- perc_func(where_read_by_age,where_read)
 #ggplot
 agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website","Both","I don't read the GVM","Print issues"), y=percent, fill=fct_relevel(where_read,"GVM Website","Both","I don't read the GVM","Print issues"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 65)) +
   labs(title = "Where do you read GVM?",
        y = "Percent",
        fill = "Response",
@@ -657,7 +659,8 @@ agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website"
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
-        legend.position = "bottom") 
+        legend.position = "bottom",
+        panel.grid.major.x = element_blank()) 
   
 agep_q2
 
@@ -684,6 +687,8 @@ engagement_by_age <- perc_func(engagement_by_age,gvsu_engagement)
 agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
                                  y=percent, fill=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 65)) +
   labs(title = "After Reading Are You More Likley to Engage in Events/Activities by Age?",
       y = "Percent",
       fill = "Response",
@@ -691,22 +696,10 @@ agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree
   facet_grid(~age) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
-        legend.position = "bottom") 
+        legend.position = "bottom",
+        panel.grid.major.x = element_blank()) 
 
 agep_q6
-
-#Sango suggestion for same question
-#agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
-#                                 y=percent, fill=age)) +
-#  geom_bar(stat = 'identity', color='black') +
-##  coord_flip() +
-#  theme(axis.title.y = element_blank()) +
-# labs(fill = "Response",
-#       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
-#  scale_fill_viridis_d(direction = -1)
-
-#showing both plots
-#grid.arrange(agep_q6,agep_q6_sango,ncol=2)
 
 #saving plot to files
 ggsave(filename = 'Q6_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
@@ -737,7 +730,11 @@ agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent,
   scale_fill_viridis_d(direction = -1) +
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
-        legend.position = "bottom") 
+        legend.position = "bottom",
+        panel.grid.major.x = element_blank()) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0),)  +
+  expand_limits(y = c(0, 60)) 
+  
 
 agep_q8
 
@@ -769,7 +766,10 @@ agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=per
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
-        legend.position = "bottom") 
+        legend.position = "bottom",
+        panel.grid.major.x = element_blank()) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 50)) 
 
 agep_q10
 
@@ -793,6 +793,8 @@ opting_by_age <- perc_func(opting_by_age,opting)
 #ggplot
 agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 80)) +
   labs(title = "Opting into Print Issues by Age",
        y = "Percent",
        fill = "Response",
@@ -801,19 +803,14 @@ agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
   scale_fill_viridis_d(direction = 1) +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
-        legend.position = "bottom") 
+        legend.position = "bottom",
+        panel.grid.major.x = element_blank()) 
 
 agep_q12
 
 #saving plot to files
 ggsave(filename = 'Q12_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
 ```
-
-```{r printing all even age graphs}
-grid.arrange(agep_q2,agep_q6,agep_q8,agep_q10,agep_q12,ncol=3)
-```
-
-
 
 # Exporting clean data as GVM_data.csv
 
