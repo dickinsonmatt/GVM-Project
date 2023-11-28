@@ -623,13 +623,28 @@ ggsave(filename = 'Q5_plot.png', width = 10, height = 7, path = "C:/Users/foste/
 ```
 
 
-#Setting global theme
+
+#Setting global theme (taken from mathew code)
 ```{r setting global theme, include = FALSE}
 theme_set(theme_bw())
 theme_default <- theme(
     axis.ticks = element_blank(),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank())
+```
+
+#age labels (taken from mathew code)
+```{r age labels}
+ages <- c(paste0("17-24 (n=", age_group_nums$number_in_age_group[1], ")"),
+        paste0("25-35 (n=", age_group_nums$number_in_age_group[2], ")"),
+        paste0("36-49 (n=", age_group_nums$number_in_age_group[3], ")"),
+        paste0("50-65 (n=", age_group_nums$number_in_age_group[4], ")"),
+        paste0("66+ (n=", age_group_nums$number_in_age_group[5], ")"))
+
+names(ages) <- c("17-24", "25-35", "36-49", "50-65", "66+")
+
+# to use these labels use this line of code
+# facet_grid(~age, labeller = labeller(age = ages))
 ```
 
 # Where_Read by Age
