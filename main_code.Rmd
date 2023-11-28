@@ -680,7 +680,8 @@ agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website"
        y = "Percent",
        fill = "Response",
        x="") +
-  facet_grid(~age) +
+  facet_grid(~age,
+             labeller = labeller(age = ages)) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
         legend.position = "bottom",
@@ -718,7 +719,8 @@ agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree
       y = "Percent",
       fill = "Response",
       x = "") +
-  facet_grid(~age) +
+  facet_grid(~age,
+             labeller = labeller(age = ages)) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
         legend.position = "bottom",
@@ -752,7 +754,8 @@ agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent,
        y = "Percent",
        fill = "Response",
        x="") +
-  facet_grid(~age) +
+  facet_grid(~age,
+             labeller = labeller(age = ages)) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
@@ -789,7 +792,8 @@ agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=per
        y = "Percent",
        fill = "Response",
        x="") +
-  facet_grid(~age) +
+  facet_grid(~age,
+             labeller = labeller(age = ages)) +
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
@@ -827,7 +831,8 @@ agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
        y = "Percent",
        fill = "Response",
        x="") +
-  facet_grid(~age) +
+  facet_grid(~age,
+             labeller = labeller(age = ages)) +
   scale_fill_viridis_d(direction = 1) +
   theme(axis.text.x = element_blank(),
         axis.title.x = element_blank(),
