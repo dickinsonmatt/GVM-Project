@@ -623,6 +623,15 @@ ggsave(filename = 'Q5_plot.png', width = 10, height = 7, path = "C:/Users/foste/
 ```
 
 
+#Setting global theme
+```{r setting global theme, include = FALSE}
+theme_set(theme_bw())
+theme_default <- theme(
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank())
+```
+
 # Where_Read by Age
 ```{r where_read by Age}
 #Create data frame with the counts of each typ 
@@ -660,7 +669,8 @@ agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website"
   scale_fill_viridis_d(direction = -1) +
   theme(axis.text.x = element_blank(),
         legend.position = "bottom",
-        panel.grid.major.x = element_blank()) 
+        panel.grid.major.x = element_blank())+
+  theme_default
   
 agep_q2
 
