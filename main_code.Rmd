@@ -481,6 +481,13 @@ website_likert_df_1 <- gvm_clean %>%
 #making df for website likert questions
 website_likert_df <- select(website_likert_df_1, starts_with("website_") & ends_with("_likert"), age)
 
+#renaming levels in likert df 
+website_likert_df <- website_likert_df %>%
+  mutate_all(~ case_when(. %in% 1:2 ~ "Disagree",
+                         . == 3 ~ "Neutral",
+                         . %in% 4:5 ~ "Agree",
+                         TRUE ~ as.character(.)))
+
 #making all variables factors so that likert function works
 website_likert_df <- data.frame(lapply(website_likert_df, as.factor))
 
@@ -493,7 +500,6 @@ website_likert_df <- print(as.vector(wl_format))
 #pivoting data frame for plotting
 website_likert_df_m <- melt(website_likert_df)
 
-
 #Renaming levels of variables for plotting 
 website_likert_df_m <- website_likert_df_m %>%
   mutate(Item= case_when(
@@ -504,21 +510,10 @@ website_likert_df_m <- website_likert_df_m %>%
     Item == 'website_proud_likert' ~ 'Reading GVM website makes me \nproud to be part of \nthe GVSU community',
     TRUE ~ as.character(Item)
   ))
-website_likert_df_m <- website_likert_df_m %>%
-  mutate(variable= case_when(
-    variable == '1' ~ 'Strongly Disagree',
-    variable == '2' ~ 'Slighly Disagree',
-    variable == '3' ~ 'Neutral',
-    variable == '4' ~ 'Slighly Agree',
-    variable == '5' ~ 'Strongly Agree',
-    TRUE ~ as.character(variable)
-  ))
-
-
 
 #facet by question with rows of ages
 q4 <- website_likert_df_m %>% ggplot()+
-  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slighly Disagree","Neutral","Slighly Agree","Strongly Agree")), 
+  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Disagree","Neutral","Agree")), 
                position=position_stack(reverse = TRUE), stat="identity", color ="black") +
   facet_wrap(~Item,nrow = 1) +
   coord_flip() +
@@ -534,12 +529,14 @@ q4 <- website_likert_df_m %>% ggplot()+
   theme(aspect.ratio = 3,
         strip.text = element_text(size = 13)) +
   scale_fill_colorblind() +
-  geom_label(aes(x=Group, y = value, label = ifelse(value >= 10, as.character(paste(round(value),"%",sep="")), NA)),
-                 position = position_stack(vjust=0.5))
-  #geom_label(aes(x = Group, y = value, label = round(value)))
-
+  scale_fill_manual(
+    values = c(Disagree = "orange", Neutral = "grey", Agree = "skyblue")) +
+  geom_label(aes(x = Group, 
+                 y = value, 
+                 label = ifelse(variable !="Neutral",as.character(paste(round(value),"%",sep="")), NA)),
+             positon = position_stack(vjust = .5, reverse = TRUE),
+             hjust = .5)
   
-
 #printing plots
 q4
   
@@ -552,6 +549,13 @@ print_likert_df_1 <- gvm_clean %>%
 
 #making df for website likert questions
 print_likert_df <- select(print_likert_df_1, starts_with("print_") & ends_with("_likert"), age)
+
+#renaming levels in likert df 
+print_likert_df <- print_likert_df %>%
+  mutate_all(~ case_when(. %in% 1:2 ~ "Disagree",
+                         . == 3 ~ "Neutral",
+                         . %in% 4:5 ~ "Agree",
+                         TRUE ~ as.character(.)))
 
 #making all variables factors so that likert function works
 print_likert_df <- data.frame(lapply(print_likert_df, as.factor))
@@ -574,23 +578,15 @@ print_likert_df_m <- print_likert_df_m %>%
     Item == 'print_proud_likert' ~ 'Reading print issues of Grand \nValley Magazine makes me proud \nto be part of the GVSU community.',
     TRUE ~ as.character(Item)
   ))
-print_likert_df_m <- print_likert_df_m %>%
-  mutate(variable= case_when(
-    variable == '1' ~ 'Strongly Disagree',
-    variable == '2' ~ 'Slightly Disagree',
-    variable == '3' ~ 'Neutral',
-    variable == '4' ~ 'Slightly Agree',
-    variable == '5' ~ 'Strongly Agree',
-    TRUE ~ as.character(variable)
-  ))
+
 
 
 #filtering labels for percentage valyes >10
-filtered_df <- print_likert_df_m[print_likert_df_m$value >= 10,]
+#filtered_df <- print_likert_df_m[print_likert_df_m$value >= 10,]
 
 #facet by question with rows of ages
 q5 <- print_likert_df_m %>% ggplot()+
-  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slightly Disagree","Neutral","Slightly Agree","Strongly Agree")), 
+  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Disagree","Neutral","Agree")), 
                position=position_stack(reverse = TRUE), stat="identity", color ="black") +
   facet_wrap(~Item,nrow = 1) +
   coord_flip() +
@@ -606,8 +602,14 @@ q5 <- print_likert_df_m %>% ggplot()+
   theme(aspect.ratio = 3,
         strip.text = element_text(size = 13)) +
   scale_fill_colorblind() +
-  geom_label(aes(x=Group, y = value, label = ifelse(value >= 10, as.character(paste(round(value),"%",sep="")), NA)),
-                 position = position_stack(vjust=0.5))
+  scale_fill_manual(
+    values = c(Disagree = "orange", Neutral = "grey", Agree = "skyblue")) +
+  geom_label(aes(x = Group, 
+                 y = value, 
+                 label = ifelse(variable !="Neutral",as.character(paste(round(value),"%",sep="")), NA)),
+             positon = position_stack(vjust = .5, reverse = TRUE),
+             hjust = .5)
+
 
 #printing plot
 q5
