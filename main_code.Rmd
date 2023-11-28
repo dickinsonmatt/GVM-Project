@@ -539,6 +539,9 @@ q4 <- website_likert_df_m %>% ggplot()+
   
 #printing plots
 q4
+
+#saving plot to files
+ggsave(filename = 'Q4_plot.png', width = 10, height = 7, path = "C:/Users/foste/Documents/GVM-Project/plots")
   
 ```
 
@@ -614,6 +617,8 @@ q5 <- print_likert_df_m %>% ggplot()+
 #printing plot
 q5
 
+#saving plot to files
+ggsave(filename = 'Q5_plot.png', width = 10, height = 7, path = "C:/Users/foste/Documents/GVM-Project/plots")
 
 ```
 
@@ -645,7 +650,7 @@ where_read_by_age <- perc_func(where_read_by_age,where_read)
 #ggplot
 agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website","Both","I don't read the GVM","Print issues"), y=percent, fill=fct_relevel(where_read,"GVM Website","Both","I don't read the GVM","Print issues"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
-  labs(title = "Where do you read GVM? (Q2)",
+  labs(title = "Where do you read GVM?",
        y = "Percent",
        fill = "Response",
        x="") +
@@ -655,6 +660,9 @@ agep_q2<-where_read_by_age %>% ggplot(aes(x=fct_relevel(where_read,"GVM Website"
         legend.position = "bottom") 
   
 agep_q2
+
+#saving plot to files
+ggsave(filename = 'Q2_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
 ```
 
 # Engagement bt Age
@@ -676,7 +684,7 @@ engagement_by_age <- perc_func(engagement_by_age,gvsu_engagement)
 agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
                                  y=percent, fill=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
-  labs(title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)",
+  labs(title = "After Reading Are You More Likley to Engage in Events/Activities by Age?",
       y = "Percent",
       fill = "Response",
       x = "") +
@@ -688,19 +696,20 @@ agep_q6 <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree
 agep_q6
 
 #Sango suggestion for same question
-agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
-                                 y=percent, fill=age)) +
-  geom_bar(stat = 'identity', color='black') +
-  coord_flip() +
-  theme(axis.title.y = element_blank()) +
- labs(fill = "Response",
-       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
-  scale_fill_viridis_d(direction = -1)
+#agep_q6_sango <- engagement_by_age %>% ggplot(aes(x=fct_relevel(gvsu_engagement,"Agree","Neutral","Disagree"), 
+#                                 y=percent, fill=age)) +
+#  geom_bar(stat = 'identity', color='black') +
+##  coord_flip() +
+#  theme(axis.title.y = element_blank()) +
+# labs(fill = "Response",
+#       title = "After Reading Are You More Likley to Engage in Events/Activities by Age? (Q6)")+
+#  scale_fill_viridis_d(direction = -1)
 
 #showing both plots
-grid.arrange(agep_q6,agep_q6_sango,ncol=2)
+#grid.arrange(agep_q6,agep_q6_sango,ncol=2)
 
-#we decided the left was superior
+#saving plot to files
+ggsave(filename = 'Q6_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
 
 ```
 
@@ -720,7 +729,7 @@ drive_to_website_by_age <- perc_func(drive_to_website_by_age,drive_to_website)
 #ggplot
 agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent, fill=as.factor(drive_to_website))) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
-  labs(title = "Driver of Website Visitation by Age (Q8)",
+  labs(title = "Driver of Website Visitation by Age",
        y = "Percent",
        fill = "Response",
        x="") +
@@ -731,6 +740,9 @@ agep_q8 <- drive_to_website_by_age %>% ggplot(aes(x=drive_to_website, y=percent,
         legend.position = "bottom") 
 
 agep_q8
+
+#saving plot to files
+ggsave(filename = 'Q8_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
 ```
 
 # website_engagement by age
@@ -749,7 +761,7 @@ website_engagement_by_age <- perc_func(website_engagement_by_age,website_engagem
 #ggplot
 agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=percent, fill=website_engagement)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
-  labs(title = "How to Make Website More Engaging by Age (Q10)",
+  labs(title = "How to Make Website More Engaging by Age",
        y = "Percent",
        fill = "Response",
        x="") +
@@ -760,6 +772,9 @@ agep_q10 <- website_engagement_by_age %>% ggplot(aes(x=website_engagement, y=per
         legend.position = "bottom") 
 
 agep_q10
+
+#saving plot to files
+ggsave(filename = 'Q10_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
 ```
 
 # Opting by age
@@ -778,7 +793,7 @@ opting_by_age <- perc_func(opting_by_age,opting)
 #ggplot
 agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
   geom_bar(stat = 'identity', position='dodge', color='black') +
-  labs(title = "Opting into Print Issues by Age (Q12)",
+  labs(title = "Opting into Print Issues by Age",
        y = "Percent",
        fill = "Response",
        x="") +
@@ -789,6 +804,9 @@ agep_q12 <- opting_by_age %>% ggplot(aes(x=opting, y=percent, fill=opting)) +
         legend.position = "bottom") 
 
 agep_q12
+
+#saving plot to files
+ggsave(filename = 'Q12_plot.png', path = "C:/Users/foste/Documents/GVM-Project/plots")
 ```
 
 ```{r printing all even age graphs}
