@@ -206,6 +206,8 @@ gvm_clean <- gvm_clean %>% mutate(avid_reader=case_when(
   avid_reader %in% c(5, 6, 7, 8, 9, 10, 15) ~ "5-10+ Articles"))
 
 
+#if we want to compare to the past survey, do the same categries as are in 2021
+
 table(gvm_clean$avid_reader)
 ```
 
@@ -471,11 +473,6 @@ ggplot(gvm_clean, aes(x = num_articles, y = num_issues))+
 
 * Website Likert Questions
 ```{r website likert}
-#filtering in responses of those who say they read the website
-#select_levels <- c("GVM Website","Both")
-#website_likert_df <- gvm_clean %>%
-#  filter(where_read %in% select_levels)
-#rm(select_levels)
 
 #filtering out responses of those who've read more than zero website articles
 website_likert_df_1 <- gvm_clean %>%
@@ -517,23 +514,10 @@ website_likert_df_m <- website_likert_df_m %>%
     TRUE ~ as.character(variable)
   ))
 
-#facet by age, with rows of questions
-q4_1 <- website_likert_df_m %>% ggplot()+
-  geom_bar(aes(x = Item, y=value, fill = fct_relevel(variable,"Strongly Disagree","Slighly Disagree","Neutral","Slighly Agree","Strongly Agree")),position=position_stack(reverse = TRUE), stat="identity", color ="black") +
-  facet_wrap(~Group,nrow = 1) +
-  coord_flip() +
-  theme_bw()+
-  labs(fill = "Response",
-       x = "Question",
-       y = "Percent",
-       title = "Website Likert by Age (filtered for those who've read >= 1 article)") +
-  theme(legend.position = "bottom",
-        axis.title.y = element_blank()) +
-  scale_fill_colorblind() +
-  theme(aspect.ratio = 3)
+
 
 #facet by question with rows of ages
-q4_2 <- website_likert_df_m %>% ggplot()+
+q4 <- website_likert_df_m %>% ggplot()+
   geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slighly Disagree","Neutral","Slighly Agree","Strongly Agree")), 
                position=position_stack(reverse = TRUE), stat="identity", color ="black") +
   facet_wrap(~Item,nrow = 1) +
@@ -557,8 +541,7 @@ q4_2 <- website_likert_df_m %>% ggplot()+
   
 
 #printing plots
-q4_1
-q4_2
+q4
   
 ```
 
@@ -594,35 +577,20 @@ print_likert_df_m <- print_likert_df_m %>%
 print_likert_df_m <- print_likert_df_m %>%
   mutate(variable= case_when(
     variable == '1' ~ 'Strongly Disagree',
-    variable == '2' ~ 'Slighly Disagree',
+    variable == '2' ~ 'Slightly Disagree',
     variable == '3' ~ 'Neutral',
-    variable == '4' ~ 'Slighly Agree',
+    variable == '4' ~ 'Slightly Agree',
     variable == '5' ~ 'Strongly Agree',
     TRUE ~ as.character(variable)
   ))
 
-#facet by age, with rows of questions
-#q5_1 <- print_likert_df_m %>% ggplot()+
-#  geom_bar(aes(x = Item, y=value, fill = fct_relevel(variable,"Strongly Disagree","Slighly Disagree","Neutral","Slighly Agree","Strongly Agree")),position=position_stack(reverse = TRUE), stat="identity", color ="black") +
-#  facet_wrap(~Group,nrow = 1) +
-#  coord_flip() +
-#  theme_bw()+
-#  labs(fill = "Response",
-#       x = "Question",
-#       y = "Percent",
-#       title = "Print Likert by Age (filtered for those who've read >= 1 issue)") +
-#  theme(legend.position = "bottom",
-#        axis.title.y = element_blank()) +
-#  scale_fill_colorblind() +
-#  theme(aspect.ratio = 3)
 
-
-
+#filtering labels for percentage valyes >10
 filtered_df <- print_likert_df_m[print_likert_df_m$value >= 10,]
 
 #facet by question with rows of ages
-q5_2 <- print_likert_df_m %>% ggplot()+
-  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slighly Disagree","Neutral","Slighly Agree","Strongly Agree")), 
+q5 <- print_likert_df_m %>% ggplot()+
+  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slightly Disagree","Neutral","Slightly Agree","Strongly Agree")), 
                position=position_stack(reverse = TRUE), stat="identity", color ="black") +
   facet_wrap(~Item,nrow = 1) +
   coord_flip() +
@@ -641,9 +609,8 @@ q5_2 <- print_likert_df_m %>% ggplot()+
   geom_label(aes(x=Group, y = value, label = ifelse(value >= 10, as.character(paste(round(value),"%",sep="")), NA)),
                  position = position_stack(vjust=0.5))
 
-#printing plots
-#q5_1
-q5_2
+#printing plot
+q5
 
 
 ```
