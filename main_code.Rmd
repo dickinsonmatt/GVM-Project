@@ -511,9 +511,12 @@ website_likert_df_m <- website_likert_df_m %>%
     TRUE ~ as.character(Item)
   ))
 
+
+website_likert_df_m$variable <- factor(website_likert_df_m$variable, levels=c("Disagree","Neutral","Agree"))
+
 #facet by question with rows of ages
 q4 <- website_likert_df_m %>% ggplot()+
-  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Disagree","Neutral","Agree")), 
+  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = variable), 
                position=position_stack(reverse = TRUE), stat="identity", color ="black") +
   facet_wrap(~Item,nrow = 1) +
   coord_flip() +
@@ -525,17 +528,19 @@ q4 <- website_likert_df_m %>% ggplot()+
        title = "To what extent do you agree with the following questions?",
        caption = "Among those who've read at least 1 article \nShowing percentage labels for values greater than 10") +
   theme(legend.position = "bottom",
-        plot.caption = element_text(hjust = 0.5,size = 13)) +
-  theme(aspect.ratio = 3,
-        strip.text = element_text(size = 13)) +
+        plot.caption = element_text(hjust = 0.5,size = 13),
+        aspect.ratio = 3,
+        strip.text = element_text(size = 7.5)) +
   scale_fill_colorblind() +
-  scale_fill_manual(
-    values = c(Disagree = "orange", Neutral = "grey", Agree = "skyblue")) +
+  scale_fill_manual(values = c(Disagree = "orange", Neutral = "grey", Agree = "skyblue")) +
   geom_label(aes(x = Group, 
                  y = value, 
-                 label = ifelse(variable !="Neutral",as.character(paste(round(value),"%",sep="")), NA)),
-             positon = position_stack(vjust = .5, reverse = TRUE),
-             hjust = .5)
+                 label = round(value)),
+             position = position_stack(vjust = 0.5, reverse = TRUE))
+                 
+                 
+                 #label = ifelse(variable !="Neutral",as.character(paste(round(value),"%",sep="")), NA)),
+             #positon = position_stack(vjust = .5, reverse = FALSE))
   
 #printing plots
 q4
@@ -578,7 +583,7 @@ print_likert_df_m <- print_likert_df_m %>%
     Item == 'print_enjoy_likert' ~ 'I enjoy reading \nthe printed publication.',
     Item == 'print_design_likert' ~ 'The design and visual elements \naid in my understanding and \nenjoyment of the text.',
     Item == 'print_connected_likert' ~ 'I feel more connected to \nGrand Valley State University \nafter the print issues.',
-    Item == 'print_proud_likert' ~ 'Reading print issues of Grand \nValley Magazine makes me proud \nto be part of the GVSU community.',
+    Item == 'print_proud_likert' ~ 'Reading print issues of Grand \nValley Magazine makes me proud \nto be part of \nthe GVSU community.',
     TRUE ~ as.character(Item)
   ))
 
@@ -600,10 +605,10 @@ q5 <- print_likert_df_m %>% ggplot()+
        y = "Percent",
        title = "To what extent do you agree with the following questions?",
        caption = "Among those who've read at least 1 issue \nShowing percentage labels for values greater than 10") +
-  theme(legend.position = "bottom",
-        plot.caption = element_text(hjust = 0.5,size = 13)) +
-  theme(aspect.ratio = 3,
-        strip.text = element_text(size = 13)) +
+   theme(legend.position = "bottom",
+        plot.caption = element_text(hjust = 0.5,size = 13),
+        aspect.ratio = 3,
+        strip.text = element_text(size = 7.5)) +
   scale_fill_colorblind() +
   scale_fill_manual(
     values = c(Disagree = "orange", Neutral = "grey", Agree = "skyblue")) +
