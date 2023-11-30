@@ -432,18 +432,6 @@ Q7_data <- gvm_data |>
     count = c(0, 0, 0),
     number_in_age_group = rep(age_group_nums$number_in_age_group[2], 3),
     num_in_category = c(1, 1, 1)) |>
-  add_row(
-    age = c("36-49"),
-    num_articles = c(9),
-    count = c(0),
-    number_in_age_group = rep(age_group_nums$number_in_age_group[3], 1),
-    num_in_category = c(1)) |>
-  add_row(
-    age = c("66+"),
-    num_articles = c(9),
-    count = c(0),
-    number_in_age_group = rep(age_group_nums$number_in_age_group[5], 1),
-    num_in_category = c(1)) |>
   mutate(
     age_percent = (count/number_in_age_group)*100,
     articles_percent = (count/num_in_category)*100) |>
@@ -507,10 +495,54 @@ print(Q7_plot)
 ```
 
 ```{r Question 7 boxplot}
-gvm_data |>
-  filter(!(num_articles == 15)) |>
-  ggplot(aes(age, num_articles, fill = age)) +
-  geom_boxplot()
+Q7_df <- read_csv("~/MyR/GVM-Project/chi-square-long-data/Q7_df.csv")
+
+category_counts <- Q7_df |> 
+  group_by(reading_level) |> 
+  summarize(category_num = n())
+
+
+age_counts <- Q7_df |> 
+  group_by(age) |> 
+  summarize(age_num = n())
+
+Q7_data_new <- Q7_df |> 
+  group_by(age, reading_level) |> 
+  summarize(observed = n()) |> 
+  ungroup() |> 
+  add_row(
+    age = "17-24",
+    reading_level = "Very High (10+)",
+    observed = 0,
+    .after = 3) |> 
+  left_join(category_counts) |> 
+  left_join(age_counts) |> 
+  mutate(category_percent = (observed/category_num)*100,
+         age_percent = (observed/age_num)*100)
+
+Q7_data_new$reading_level <- factor(Q7_data_new$reading_level, c("None", "Low (1-5)", "High (6-10)", "Very High (10+)"))
+
+Q7_plot <- Q7_data_new |> 
+  ggplot(aes(as.factor(reading_level), age_percent, fill = as.factor(reading_level))) +
+  geom_col(position = "dodge", color = "black") +
+  scale_fill_viridis_d() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.05)),
+    breaks = seq(0, 100, 10)) +
+  labs(
+    x = "Number of Articles",
+    y = "Percent",
+    fill = "Reading Amount",
+    title = "How many articles have you read on the Grand Valley Magazine \nWEBSITE in the last year?"
+  ) +
+  theme_default +
+  theme(axis.title.x = element_blank(),
+        legend.position = "bottom",
+        axis.text.x = element_blank()) +
+  facet_grid(~age, 
+    labeller = labeller(age = ages))
+
+Q7_plot
 ```
 
 
