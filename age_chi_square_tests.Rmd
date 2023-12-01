@@ -601,7 +601,7 @@ Q7_post_hoc |>
 ** Would you read Grand Valley Magazine if it was offered as a WEBSITE version only?
 
 ```{r Q9 data}
-Q9_df <- data.frame(
+Q9_df <- tibble(
   age = rep(Q9_data$age, Q9_data$count),
   website_only = rep(Q9_data$website_only, Q9_data$count)
 )
