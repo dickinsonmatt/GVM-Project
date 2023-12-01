@@ -79,7 +79,7 @@ Q11_results |>
       p_value < 0.05/choose(5,2) ~ "*",
       TRUE ~ "n.s."
     ),
-    p_value = round(p_value, 6)) |> 
+    p_value = scientific(p_value, digits = 3)) |> 
   flextable() |> 
   align(j = 5, align = "right", part = "body") |> 
   align(j = 5, align = "right", part = "header") |> 
@@ -387,7 +387,7 @@ Q11_post_hoc |>
       p_value < 0.01/choose(5,2) ~ "**",
       p_value < 0.05/choose(5,2) ~ "*",
       TRUE ~ "n.s."),
-    p_value = round(p_value, 6)) |> 
+    p_value = scientific(p_value, digits = 3)) |> 
   flextable() |> 
   align(j = 5, align = "right", part = "body") |> 
   align(j = 5, align = "right", part = "header") |> 
