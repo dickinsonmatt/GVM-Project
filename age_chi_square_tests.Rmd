@@ -660,72 +660,90 @@ Q9_results |>
 ```
 
 ```{r Q9 posthoc}
-ages <- unique(Q1_df$age)
+# ages <- unique(Q1_df$age)
+# 
+# post_hoc_list <- list()
+# 
+# Q9_df <- Q9_df |> 
+#   mutate(age = as.character(age),
+#          website_only = as.character(website_only))
+# 
+# test_df <- Q9_df
+# 
+# for (group in 2:5){
+#   current_test = 1
+#   data <- test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 3:5){
+#   current_test = 2
+#   data <-  test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 4:5){
+#   current_test = 3
+#   data <- test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 5){
+#   current_test = 4
+#   data <- test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#    
+#    post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# 
+# Q9_post_hoc <- do.call(rbind, post_hoc_list) 
+# 
+# Q9_post_hoc |> 
+#   mutate(
+#     statistic = round(statistic, 4),
+#     significant = case_when(
+#       p_value < 0.001/choose(5,2) ~ "***",
+#       p_value < 0.01/choose(5,2) ~ "**",
+#       p_value < 0.05/choose(5,2) ~ "*",
+#       TRUE ~ "n.s."
+#     ),
+#     p_value = round(p_value, 6)) |> 
+#   flextable() |> 
+#   align(j = 5, align = "right", part = "body") |> 
+#   align(j = 5, align = "right", part = "header") |> 
+#   set_caption(paste0("Posthoc testing for ", "Question 9"))
+```
 
-post_hoc_list <- list()
+```{r Q9 prop test}
+Q9_overall_data <- gvm_data |>
+  mutate(website_only = case_when(
+           website_only == "I don't know/I'm not sure" ~ "Unsure",
+           TRUE ~ website_only
+         )) |>
+  filter(num_articles > 0 | num_issues > 0) |> 
+  group_by(website_only) |>
+  summarize(num_in_category = n()) |> 
+  mutate(N = 909,
+         percent = (num_in_category/N)*100)
 
-Q9_df <- Q9_df |> 
-  mutate(age = as.character(age),
-         website_only = as.character(website_only))
+Q9_df_overall <- tibble(
+  response = rep(Q9_overall_data$website_only, Q9_overall_data$num_in_category)
+)
 
-test_df <- Q9_df
-
-for (group in 2:5){
-  current_test = 1
-  data <- test_df |> 
-    filter(age %in% c(ages[current_test], ages[group])) |> 
-    chisq_test(age ~ website_only) |> 
-    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
-  
-  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
-}
-
-for (group in 3:5){
-  current_test = 2
-  data <-  test_df |> 
-    filter(age %in% c(ages[current_test], ages[group])) |> 
-    chisq_test(age ~ website_only) |> 
-    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
-  
-  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
-}
-
-for (group in 4:5){
-  current_test = 3
-  data <- test_df |> 
-    filter(age %in% c(ages[current_test], ages[group])) |> 
-    chisq_test(age ~ website_only) |> 
-    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
-  
-  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
-}
-
-for (group in 5){
-  current_test = 4
-  data <- test_df |> 
-    filter(age %in% c(ages[current_test], ages[group])) |> 
-    chisq_test(age ~ website_only) |> 
-    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
-   
-   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
-}
-
-
-Q9_post_hoc <- do.call(rbind, post_hoc_list) 
-
-Q9_post_hoc |> 
-  mutate(
-    statistic = round(statistic, 4),
-    significant = case_when(
-      p_value < 0.001/choose(5,2) ~ "***",
-      p_value < 0.01/choose(5,2) ~ "**",
-      p_value < 0.05/choose(5,2) ~ "*",
-      TRUE ~ "n.s."
-    ),
-    p_value = round(p_value, 6)) |> 
-  flextable() |> 
-  align(j = 5, align = "right", part = "body") |> 
-  align(j = 5, align = "right", part = "header") |> 
-  set_caption(paste0("Posthoc testing for ", "Question 9"))
 ```
 

@@ -182,10 +182,10 @@ print(Q1_plot_age)
 Here are the counts per each category for Question 1.
 ```{r Question 1 counts}
 tab_q1 <- Q1_numbers |> 
-  rename(Location = location, "Count in category" = num_in_category) |> 
+  rename(Source = location, "Count in category" = num_in_category) |> 
   flextable() |>
   width(
-    j = "Location",
+    j = "Source",
     width = 1.5)
 
 tab_q1
@@ -269,22 +269,22 @@ print(Q3_plot_original)
 
 
 ```{r Question 3 plot per age}
-Q3_plot_age <- Q3_data |>
-  ggplot(aes((num_issues), age_percent, fill = age)) +
-  geom_col(position = "dodge", color = "black", linewidth = .1) +
-  scale_fill_viridis_d(direction = -1) +
-  scale_y_continuous(
-    expand = expansion(mult = c(0, 0.05)),
-    breaks = seq(0, 70, 10)) +
-  labs(
-    x = "Number of Issues",
-    y = "Percent",
-    fill = "Age Group",
-    title = "How many PRINT issues have you read within the last year?"
-  ) + 
-  theme_default
-
-print(Q3_plot_age)
+# Q3_plot_age <- Q3_data |>
+#   ggplot(aes((num_issues), age_percent, fill = age)) +
+#   geom_col(position = "dodge", color = "black", linewidth = .1) +
+#   scale_fill_viridis_d(direction = -1) +
+#   scale_y_continuous(
+#     expand = expansion(mult = c(0, 0.05)),
+#     breaks = seq(0, 70, 10)) +
+#   labs(
+#     x = "Number of Issues",
+#     y = "Percent",
+#     fill = "Age Group",
+#     title = "How many PRINT issues have you read within the last year?"
+#   ) + 
+#   theme_default
+# 
+# print(Q3_plot_age)
 ```
 
 ```{r Question 3 plot faceted age USING}
@@ -609,14 +609,21 @@ Q9_numbers <- gvm_data |>
            website_only == "I don't know/I'm not sure" ~ "Unsure",
            TRUE ~ website_only
          )) |>
+  filter(num_articles > 0 | num_issues > 0) |> 
   group_by(website_only) |>
   summarize(num_in_category = n())
+
+Q9_ages <- gvm_data |> 
+  filter(num_articles > 0 | num_issues > 0) |> 
+  group_by(age) |>
+  summarize(number_in_age_group = n())
   
 Q9_data <- gvm_data |>
+  filter(num_articles > 0 | num_issues > 0) |> 
   select(age, website_only) |>
   group_by(age, website_only) |>
   summarize(count = n()) |>
-  left_join(age_group_nums) |>
+  left_join(Q9_ages) |>
   mutate(age_percent = (count/number_in_age_group)*100,
          website_only = case_when(
            website_only == "I don't know/I'm not sure" ~ "Unsure",
@@ -624,6 +631,16 @@ Q9_data <- gvm_data |>
          )) |>
   left_join(Q9_numbers) |>
   mutate(category_percent = (count/num_in_category)*100)
+
+
+ages_Q9 <- c(paste0("17-24 (n=", Q9_ages$number_in_age_group[1], ")"),
+        paste0("25-35 (n=", Q9_ages$number_in_age_group[2], ")"),
+        paste0("36-49 (n=", Q9_ages$number_in_age_group[3], ")"),
+        paste0("50-65 (n=", Q9_ages$number_in_age_group[4], ")"),
+        paste0("66+ (n=", Q9_ages$number_in_age_group[5], ")"))
+
+names(ages_Q9) <- c("17-24", "25-35", "36-49", "50-65", "66+")
+
 ```
 
 
@@ -636,15 +653,17 @@ Q9_plot <- Q9_data |>
   labs(
     y = "Percent",
     fill = "Response",
-    title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?"
+    title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?",
+    caption = "Among those who have read at least 1 article or issue"
   ) +
   theme(
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
-    legend.position = "bottom") +
+    legend.position = "bottom",
+    plot.caption = element_text(hjust = .5)) +
   facet_grid(
     ~age, 
-    labeller = labeller(age = ages)) +
+    labeller = labeller(age = ages_Q9)) +
   theme_default
 
 # five by three chi-square test
@@ -654,6 +673,53 @@ Q9_plot <- Q9_data |>
 
 print(Q9_plot)
 # make the border slightly thicker
+```
+
+```{r Q9 overall}
+Q9_overall_data <- gvm_data |>
+  mutate(website_only = case_when(
+           website_only == "I don't know/I'm not sure" ~ "Unsure",
+           TRUE ~ website_only
+         )) |>
+  filter(num_articles > 0 | num_issues > 0) |> 
+  group_by(website_only) |>
+  summarize(num_in_category = n()) |> 
+  mutate(total = 909,
+         percent = (num_in_category/total)*100) 
+
+
+Q9_overall_plot <- Q9_overall_data |> 
+  ggplot(aes(forcats::fct_rev(as.factor(website_only)), percent, fill = forcats::fct_rev(website_only))) +
+  geom_col(position = "dodge", color = "black", linewidth = .3) +
+  scale_fill_colorblind() +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_default +
+  labs(
+    x = "",
+    y = "Percent",
+    title = "Would you read Grand Valley Magazine if it was online only?",
+    fill = "Response",
+    caption = "Among those who have read at least 1 issue or article"
+  ) +
+  theme(
+    legend.position = "bottom",
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    plot.caption = element_text(hjust = .5)
+  ) 
+
+ggsave(
+    filename="Q9_overall.svg",
+    plot=Q9_overall_plot,
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+  
+ggsave(
+    filename="Q9_overall.png",
+    plot=Q9_overall_plot,
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
 ```
 
 
@@ -670,7 +736,6 @@ tab_q9 <- Q9_numbers |>
 
 tab_q9
 ```
-
 
 
 
@@ -749,9 +814,9 @@ tab_q11
 
 ```{r Q11 plot zoom in}
 Q11_plot_zoom <- Q11_data |>
-  filter(action %in% c("Saved Article", "Shared Article - Email", "Shared Article - Social Media", "Visited Website")) |>
+  filter(action %in% c("Saved Article", "Shared Article - Email", "Visited Website")) |>
   mutate(action = str_replace_all(action, " Article -", " -"),
-    action = factor(action, levels = c("Shared - Social Media", "Shared - Email",  "Saved Article", "Visited Website"))
+    action = factor(action, levels = c( "Shared - Email",  "Saved Article", "Visited Website"))
     ) |> 
   ggplot(aes(action, category_percent, fill = age)) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
@@ -884,4 +949,6 @@ data.frame(
   Status = rep("Export Successful", 6)
 ) |> flextable(cwidth = 1.5)
 ```
+
+
 
