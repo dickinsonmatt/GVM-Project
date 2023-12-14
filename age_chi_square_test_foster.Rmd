@@ -1,0 +1,1506 @@
+---
+title: "age_year_chi_square_tests_foster"
+author: "Foster Thorburn"
+date: "2023-12-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#global chunk settings
+knitr::opts_chunk$set(echo = FALSE, fig.show = 'asis', warning = FALSE,results = 'asis', ft.keepnext = F)
+```
+
+```{r libraries, echo=FALSE}
+library(tidyverse)
+library(readr)
+library(flextable)
+library(tidymodels)
+library(forcats)
+library(likert)
+library(reshape2)
+library(ggplot2)
+library(ggthemes)
+```
+
+Cleaning Data
+```{r data cleaning}
+
+reload_data_funct <- function() {
+data_import <- read_csv("STA 419 GV Magazine Survey.csv")
+
+data_dict <- read_csv("Data Dictionary for GVM survey - Final.csv")
+
+gvm_main <- data_import |>
+  select(12:62) |>
+  slice(c(-1,-2))
+
+colnames(gvm_main) <- data_dict$variable_name
+
+gvm_clean <- gvm_main |>
+  select(-1, -51) |>
+  mutate(
+    where_read = case_when(
+      where_read == "1" ~ "GVM Website",
+      where_read == "2" ~ "Print issues",
+      where_read == "3" ~ "Both",
+      TRUE ~ "I don't read the GVM"),
+    num_issues = as.numeric(case_when(
+      num_issues == "1" ~ 0,
+      num_issues == "2" ~ 2,
+      num_issues == "6" ~ 3,
+      TRUE ~ 1)),
+    gvsu_engagement = case_when(
+      gvsu_engagement == "1" ~ "Disagree",
+      gvsu_engagement == "2" ~ "Neutral",
+      TRUE ~ "Agree"),
+    age = case_when(
+      age == "1" ~ "17-24",
+      age == "2" ~ "25-35",
+      age == "3" ~ "36-49",
+      age == "4" ~ "50-65",
+      TRUE ~ "66+"
+    ))
+
+gvm_clean$num_articles <- as.numeric(gvm_clean$num_articles)
+
+#gvm_clean <- gvm_clean %>% mutate(num_articles=recode(num_articles,
+#                                 "NA" = 15))
+gvm_clean$num_articles[is.na(gvm_clean$num_articles)] <- 15
+
+gvm_clean <- gvm_clean %>%
+  mutate(website_only = case_when(
+    website_only == '1' ~ "Yes",
+    website_only == '2' ~ "I don't know/I'm not sure",
+    website_only == '3' ~ "No",
+    TRUE ~ as.character(website_only)
+  ))
+
+gvm_clean <- gvm_clean %>%
+  mutate(website_engagment = case_when(
+    website_engagment == '1' ~ "Larger variety of content",
+    website_engagment == '2' ~ "Easier navigation",
+    website_engagment == '3' ~ "It is currently engaging",
+    website_engagment == '8' ~ "More specific recommendations",
+    website_engagment == '4' ~ "I don't know/I'm not sure",
+    website_engagment == '5' ~ "I don't use the website",
+    website_engagment == '7' ~ "Other",
+    TRUE ~ as.character(website_engagment)
+  ))
+
+
+gvm_clean <- gvm_clean %>%
+  mutate(drive_to_website = case_when(
+    drive_to_website == '1' ~ 'Word of Mouth',
+    drive_to_website == '2' ~ 'Email',
+    drive_to_website == '3' ~ 'Social Media',
+    drive_to_website == '4' ~ 'Link within printed Issue',
+    drive_to_website == '5' ~ 'Doing research',
+    TRUE ~ as.character(drive_to_website)
+  ))
+
+gvm_clean <- gvm_clean %>%
+  mutate(opting = case_when(
+    opting == '1' ~ 'Yes',
+    opting == '2' ~ 'No',
+    TRUE ~ as.character(opting)
+  ))
+
+                                 
+gvm_clean <- type.convert(gvm_clean, as.is = TRUE)
+
+
+rm(gvm_main)
+rm(data_import)
+rm(data_dict)
+
+return(gvm_clean)
+
+}
+
+#calling cleaning function
+gvm_clean <- reload_data_funct()
+
+#Most Info df
+counts <-c(
+length(which(gvm_clean$most_info_gv_emails == 1)),
+length(which(gvm_clean$most_info_gvm_print == 1)),
+length(which(gvm_clean$most_info_gvm_website == 1)),
+length(which(gvm_clean$most_info_gv_publications == 1)),
+length(which(gvm_clean$most_info_media == 1)),
+length(which(gvm_clean$most_info_wordofmouth_alumni == 1)),
+length(which(gvm_clean$most_info_lanthorn == 1)),
+length(which(gvm_clean$most_info_socialmedia == 1)),
+length(which(gvm_clean$most_info_other == 1))
+)
+
+most_info_df <- data.frame(
+  Response = c("Emails from GVSU","Grand Valley Magazine Print Issues","Grand Valley Magazine Website","Other GVSU Publications","Local or National Media","Word of Mouth/Other Alumni","The Lanthorn","Social Media","Other"),
+  count = counts
+)
+
+
+
+```
+
+Defining Functions
+```{r defining my functions}
+
+#FUNCTION to print tables of observed and expected counts of responses on Year
+obs_excp_tables_2123 <- function(my_df){
+  
+  #observed counts table  
+obs_table <- my_df %>% 
+  select(Year = Year, Response, Count) %>% 
+  pivot_wider(names_from =  Response, values_from = Count) %>% 
+  flextable() %>% 
+  add_header_lines(values = "Response")
+  
+  #Expected counts table
+exp_table <- my_df %>% 
+  mutate(expected_count = ((number_in_year_group)*(num_in_category))/sum(my_df$Count)) %>% 
+  select(Year, Response, observed = Count, expected_count) %>% 
+  select(Year, Response, expected_count) %>% 
+  pivot_wider(names_from = Response, values_from = expected_count) %>% 
+  flextable() %>% 
+  add_header_lines(values = "Response")
+
+ #align(j = 5, align = "right", part = "body") %>%
+ #align(j = 5, align = "left", part = "header") %>%
+
+#combine both tables into a list
+return(list(obs = obs_table,exp = exp_table))
+
+
+}
+
+#FUNCTION to print tables of observed and expected counts of responses
+obs_excp_tables <- function(my_df){
+  
+  #observed counts table 
+obs_table <- my_df %>% 
+  select(Age = age, colnames(.)[2], Sum_Count) %>% 
+  pivot_wider(names_from =  colnames(.)[2], values_from = Sum_Count) %>% 
+  flextable() %>% 
+  add_header_lines(values = "Response")
+  
+  #Expected counts table
+exp_table <- my_df %>% 
+  mutate(expected_count = ((number_in_age_group)*(num_in_category))/sum(my_df$Sum_Count)) %>% 
+  select(age, colnames(.)[2], observed = Sum_Count, expected_count) %>% 
+  select(age, colnames(.)[2], expected_count) %>% 
+  pivot_wider(names_from = colnames(.)[2], values_from = expected_count) %>% 
+  flextable() %>% 
+  add_header_lines(values = "Response")
+
+ #align(j = 5, align = "right", part = "body") %>%
+ #align(j = 5, align = "left", part = "header") %>%
+
+#combine both tables into a list
+return(list(obs = obs_table,exp = exp_table))
+
+
+}
+
+#FUNCTION to calculate row percentage of each age group
+perc_func<- function(mydf,myvar) {
+  mydf <- mydf %>%
+  group_by(age, {{myvar}}) %>%
+  summarize(Sum_Count = sum(Count)) %>%
+  group_by(age) %>%
+  mutate(age_percent = Sum_Count / sum(Sum_Count) * 100)
+  return(mydf)
+}
+
+#FUNCTION to calculate counts of each age for each response
+my_formatting_funct_1 <- function(my_var) {
+  
+  # creating number_in_age_group column
+  gvm_clean <- gvm_clean %>%
+    group_by(age) %>%
+    mutate(number_in_age_group = n())
+  
+  # Create data frame with the counts of each type
+  my_df <- as.data.frame(table(gvm_clean$age, gvm_clean[[my_var]]))  # Use [[my_var]] to access the column dynamically
+  
+  #renaming columns
+  my_df <- rename(my_df,'age'='Var1',
+                              'Response'='Var2',
+                              'Count'='Freq')
+  return(my_df)
+}
+
+#FUNCTION 
+my_formatting_funct_2 <- function(my_df) {
+  
+  #create column number_in_age_group
+  age_totals <- my_df %>% 
+  group_by(age) %>% 
+  summarize(number_in_age_group = sum(Sum_Count)) 
+  #merging new column into df
+  my_df <- merge(my_df, age_totals, by = 'age')
+
+  #create column category totals
+  category_totals <- my_df %>% 
+  group_by(Response) %>% 
+  summarize(num_in_category = sum(Sum_Count)) 
+  #merging new column into df
+  my_df <- merge(my_df, category_totals, by = 'Response')
+
+  #creating column for category percent
+  my_df <- my_df %>% mutate(category_percent= 100*(Sum_Count / num_in_category))
+  
+  # Reorder columns by their index, doing this so my function works correctly
+  column_order <- c(2,1,3,4,5,6,7)
+  my_df <- my_df[, column_order]
+
+  my_df
+}
+
+
+my_master_format_funct <- function(my_df,my_var) {
+  
+  #formatting couts
+  my_df <- my_formatting_funct_1({{my_var}})
+
+  #formatting age percentages
+  my_df <- perc_func(my_df,Response)
+
+  #formatting category counts and percentages
+  my_df <- my_formatting_funct_2(my_df)
+  
+  my_df
+  
+}
+
+
+#FUNCTION for running post hoc analysis 
+my_posthoc_funct<- function(my_df,Q_num) {
+  
+#vector of age groups
+ages <- unique(my_df$age)
+
+#initializing a list
+post_hoc_list <- list()
+
+#making variables in df characters for testing purposes
+my_df <- my_df %>% 
+  mutate(age = as.character(age),
+         Response = as.character(Response))
+
+test_df <- my_df
+
+for (current_test in 1:4) {
+  for (group in (current_test + 1):5) {
+    data <- test_df |> 
+      filter(age %in% c(ages[current_test], ages[group])) |> 
+      chisq_test(age ~ Response) |> 
+      mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+    
+    post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+  }
+}
+
+post_hoc_table <- do.call(rbind, post_hoc_list) 
+
+result_table <- post_hoc_table %>%  
+    mutate(
+      statistic = round(statistic, 4),
+      significant = case_when(
+        p_value < 0.001/choose(5,2) ~ "***",
+        p_value < 0.01/choose(5,2) ~ "**",
+        p_value < 0.05/choose(5,2) ~ "*",
+        TRUE ~ "n.s."
+      ),
+      p_value = scientific(p_value, digits = 3)
+      
+    )
+  
+  result_table_flex <- result_table %>% 
+    flextable() %>%
+    set_caption(paste0("Posthoc testing for Question ", as.character(Q_num),sep=" "))
+  
+  #align(j = 5, align = "right", part = "body") %>%
+  #align(j = 5, align = "right", part = "header") %>%
+  
+  #this return function is necessary to print as a flextable 
+  return(result_table_flex)
+ 
+}
+
+#FUNCTION
+my_perc_funct_2021 <- function(my_df) {
+  my_df$Percent <- round((my_df$Count / sum(my_df$Count)) * 100,2)
+  
+  my_df
+}
+
+
+#FUNCTION for creating 2023 data for comparisons
+my_2023_funct <- function(my_df, my_var) {
+my_df <- my_df %>%
+  select({{my_var}}) %>% 
+  group_by({{my_var}}) %>%
+  summarize(Count = n(),Percent = round((n()/nrow(my_df)) *   100,2)) 
+
+  my_df
+}
+```
+
+#Setting global theme (taken from mathew code)
+```{r setting global theme, include = FALSE}
+theme_set(theme_bw())
+theme_default <- theme(
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank())
+```
+
+Q2
+```{r Q2 chi-sq formatting}
+
+                      #(enter what you want data frame name to be, "variable name in quotes")
+where_read_by_age <- my_master_format_funct(where_read_by_age,"where_read")
+
+#observed and expected count tables
+result <- obs_excp_tables(where_read_by_age)
+
+#printing tables
+result$obs
+result$exp
+
+#saving tables
+save_as_image(result$obs,path = "age_chi_square_test_foster/q2_age_obs.png")
+save_as_image(result$exp,path = "age_chi_square_test_foster/q2_age_exp.png")
+
+#"C:/Users/foste/Documents/GVM-Project/plots"
+```
+
+```{r Q2 chi-sq printing}
+
+
+#making new df for testing
+where_read_by_age_test <- data.frame(
+  age = as.factor(rep(where_read_by_age$age, where_read_by_age$Sum_Count)),
+  Response = as.factor(rep(where_read_by_age$Response, where_read_by_age$Sum_Count))
+)
+
+#chi square test
+Q2_age_chi_table <- chisq_test(where_read_by_age_test, age ~ Response) %>% 
+  flextable() %>% 
+  set_formatter(p_value = function(x) {
+    formatC(x, format = "e", digits = 3)
+  }) 
+
+Q2_age_chi_table
+
+#saving table
+save_as_image(Q2_age_chi_table,path = "age_chi_square_test_foster/q2_age_chi.png")
+
+
+```
+
+```{r Q2 post-hoc}
+q2_age_post <- my_posthoc_funct(where_read_by_age_test,Q_num = "2")
+q2_age_post
+
+#saving table
+save_as_image(q2_age_post,path = "age_chi_square_test_foster/q2_age_post.png")
+```
+
+Q6
+```{r Q6 chi-sq formatting}
+engagement_by_age <- my_master_format_funct(engagement_by_age,"gvsu_engagement")
+
+#observed and expected count tables
+result <- obs_excp_tables(engagement_by_age)
+
+#printing tables
+result$obs
+result$exp
+
+#saving tables
+save_as_image(result$obs,path = "age_chi_square_test_foster/q6_age_obs.png")
+save_as_image(result$exp,path = "age_chi_square_test_foster/q6_age_exp.png")
+
+```
+
+```{r Q6 chi-sq printing}
+
+#making new df for testing
+engagement_by_age_test <- data.frame(
+  age = as.factor(rep(engagement_by_age$age, engagement_by_age$Sum_Count)),
+  Response = as.factor(rep(engagement_by_age$Response, engagement_by_age$Sum_Count))
+)
+
+#chi square test
+q6_age_chi <- chisq_test(engagement_by_age_test, age ~ Response) %>% 
+  flextable() %>% 
+  set_formatter(p_value = function(x) {
+    formatC(x, format = "e", digits = 3)
+  }) 
+
+q6_age_chi
+
+save_as_image(q6_age_chi,path = "age_chi_square_test_foster/q6_age_chi.png")
+
+#we fail to reject null hypothesis (p > .05), there is not sufficient evidence to suggest there is an association between age and engagement in events/activities after reading
+```
+
+```{r Q6 post-hoc}
+#my_posthoc_funct(engagement_by_age_test,Q_num = "6")
+#no post hoc necessary since there was not a significant result found initially
+```
+
+Q8
+```{r Q8 chi-sq formatting}
+drive_to_website_by_age <- my_master_format_funct(drive_to_website_by_age,"drive_to_website")
+
+#observed and expected count tables
+result <- obs_excp_tables(drive_to_website_by_age)
+
+#printing tables
+result$obs
+result$exp
+
+#saving tables
+save_as_image(result$obs,path = "age_chi_square_test_foster/q8_age_obs.png")
+save_as_image(result$exp,path = "age_chi_square_test_foster/q8_age_exp.png")
+
+```
+
+```{r Q8 chi-sq printing}
+
+#making new df for testing
+drive_to_website_by_age_test <- data.frame(
+  age = as.factor(rep(drive_to_website_by_age$age, drive_to_website_by_age$Sum_Count)),
+  Response = as.factor(rep(drive_to_website_by_age$Response, drive_to_website_by_age$Sum_Count))
+)
+
+#chi square test
+q8_age_chi <- chisq_test(drive_to_website_by_age_test, age ~ Response) %>% 
+  flextable() %>% 
+  set_formatter(p_value = function(x) {
+    formatC(x, format = "e", digits = 3)
+  }) 
+
+q8_age_chi
+
+save_as_image(q8_age_chi,path = "age_chi_square_test_foster/q8_age_chi.png")
+
+#we reject null hypothesis, there is sufficient evidence to suggest an association between age and 
+```
+
+```{r Q8 post-hoc}
+q8_age_post <- my_posthoc_funct(drive_to_website_by_age_test,Q_num = "8")
+q8_age_post
+
+save_as_image(q8_age_post,path = "age_chi_square_test_foster/q8_age_post.png")
+```
+
+Q10
+```{r Q10 chi-sq formatting}
+
+x <- 0 #set EQL to 0 to do regular data, set eql to 1 to filter out non-responses
+       #note: filtering out non-responses violates chi-square assumptions
+
+if (x == 0) {
+#rerunning cleaning function
+gvm_clean <- reload_data_funct()
+website_engagement_by_age <- my_master_format_funct(website_engagement_by_age,"website_engagment")
+
+} else {
+#filtering by having read at least 1 article or 1 issue
+gvm_clean <- gvm_clean %>%
+  select(age, website_engagment, num_articles) %>% 
+  subset(website_engagment != "I don't know/I'm not sure") %>% 
+  subset(website_engagment !="I don't use the website") %>% 
+   subset(num_articles != 0)
+
+#formatting
+q10agedf <- my_formatting_funct_1("website_engagment")
+q10agedf <- perc_func(q10agedf,Response)
+q10agedf <- my_formatting_funct_2(q10agedf)
+website_engagement_by_age <- q10agedf
+}
+
+
+#observed and expected count tables
+result <- obs_excp_tables(website_engagement_by_age)
+
+#printing tables
+result$obs
+result$exp
+
+#saving tables
+save_as_image(result$obs,path = "age_chi_square_test_foster/q10_age_obs.png")
+save_as_image(result$exp,path = "age_chi_square_test_foster/q10_age_exp.png")
+
+
+#the assumptions are satistifed here since the chi squared is comparing age responses, not between responses
+```
+
+```{r Q10 chi-sq printing}
+
+#making new df for testing
+website_engagement_by_age_test <- data.frame(
+  age = as.factor(rep(website_engagement_by_age$age, website_engagement_by_age$Sum_Count)),
+  Response = as.factor(rep(website_engagement_by_age$Response, website_engagement_by_age$Sum_Count))
+)
+
+#chi square test
+q10_age_chi <- chisq_test(website_engagement_by_age_test, age ~ Response) %>% 
+  flextable() %>% 
+  set_formatter(p_value = function(x) {
+    formatC(x, format = "e", digits = 3)
+  }) 
+q10_age_chi
+
+save_as_image(q10_age_chi,path = "age_chi_square_test_foster/q10_age_chi.png")
+
+
+```
+
+```{r Q10 post-hoc}
+q10_age_post <- my_posthoc_funct(website_engagement_by_age_test,Q_num = "10")
+q10_age_post
+
+save_as_image(q10_age_post,path = "age_chi_square_test_foster/q10_age_post.png")
+```
+
+Q12
+```{r Q12 chi-sq formatting}
+gvm_clean <- reload_data_funct()
+
+opting_by_age <- my_master_format_funct(opting_by_age,"opting")
+
+#observed and expected count tables
+result <- obs_excp_tables(opting_by_age)
+
+#printing tables
+result$obs
+result$exp
+
+#saving tables
+save_as_image(result$obs,path = "age_chi_square_test_foster/q12_age_obs.png")
+save_as_image(result$exp,path = "age_chi_square_test_foster/q12_age_exp.png")
+```
+
+```{r Q12 chi-sq printing}
+
+#making new df for testing
+opting_by_age_test <- data.frame(
+  age = as.factor(rep(opting_by_age$age, opting_by_age$Sum_Count)),
+  Response = as.factor(rep(opting_by_age$Response, opting_by_age$Sum_Count))
+)
+
+#chi square test
+q12Page_chi <- chisq_test(opting_by_age_test, age ~ Response) %>% 
+  flextable() %>% 
+  set_formatter(p_value = function(x) {
+    formatC(x, format = "e", digits = 3)
+  }) 
+
+q12Page_chi
+
+#saving tables
+save_as_image(q12Page_chi,path = "age_chi_square_test_foster/q12_age_chi.png")
+
+
+#we reject null hypothesis, there is sufficient evidence to suggest an association between age and opting into continue receiving a print issue of the GVM
+```
+
+```{r Q12 post-hoc}
+q12_age_post <- my_posthoc_funct(opting_by_age_test,Q_num = "12")
+
+q12_age_post
+
+#saving tables
+save_as_image(q12_age_post,path = "age_chi_square_test_foster/q12_age_post.png")
+
+
+```
+
+Q5
+```{r q5_1 no longer using this version}
+
+#filtering out responses of those who've read more than zero print issues
+#print_likert_df_1 <- gvm_clean %>%
+#  filter(num_issues != 0)
+
+#making df for website likert questions
+#print_likert_df <- select(print_likert_df_1, starts_with("print_") & ends_with("_likert"), age)
+
+#making all variables factors so that likert function works
+#print_likert_df <- data.frame(lapply(print_likert_df, as.factor))
+
+#getting percentages by age group
+#pl_format <- likert(print_likert_df[,1:4], grouping=print_likert_df[,5])
+
+#placing resulting format in a data frame
+#print_likert_df <- print(as.vector(pl_format))
+
+#pivoting data frame for plotting
+#print_likert_df_m <- melt(print_likert_df)
+
+#Renaming levels of variables for plotting 
+#print_likert_df_m <- print_likert_df_m %>%
+#  mutate(Item= case_when(
+#    Item == 'print_enjoy_likert' ~ 'I enjoy reading \nthe printed publication.',
+#    Item == 'print_design_likert' ~ 'The design and visual elements \naid in my understanding and \nenjoyment of the text.',
+#    Item == 'print_connected_likert' ~ 'I feel more connected to \nGrand Valley State University \nafter the print issues.',
+#    Item == 'print_proud_likert' ~ 'Reading print issues of Grand \nValley Magazine makes me \nproud to be part of the \nGVSU community.',
+#    TRUE ~ as.character(Item)
+#  ))
+#print_likert_df_m <- print_likert_df_m %>%
+#  mutate(variable= case_when(
+#    variable == '1' ~ 'Strongly Disagree',
+#    variable == '2' ~ 'Slightly Disagree',
+#    variable == '3' ~ 'Neutral',
+#    variable == '4' ~ 'Slightly Agree',
+#    variable == '5' ~ 'Strongly Agree',
+#    TRUE ~ as.character(variable)
+#  ))
+
+
+
+
+#facet by question with rows of ages
+#q5_1 <- print_likert_df_m %>% ggplot()+
+#  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slightly #Disagree","Neutral","Slightly Agree","Strongly Agree")), 
+#               position=position_stack(reverse = TRUE), stat="identity", color ="black") +
+#  facet_wrap(~Item,nrow = 1) +
+#  coord_flip() +
+#  theme_bw()+
+#  facet_wrap(~Item, nrow = 1) +
+#  labs(fill = "Response",
+#       x = "Age",
+#       y = "Percent",
+#       title = "To what extent do you agree with the following questions?",
+#       caption = "Among those who've read at least 1 issue \nShowing percentage labels for values greater than 10") +
+#  theme(legend.position = "bottom",
+#        plot.caption = element_text(hjust = 0.5,size = 13)) +
+#  theme(aspect.ratio = 3,
+#        strip.text = element_text(size = 7)) +
+#  scale_fill_colorblind() +
+#  geom_label(aes(x=Group, y = value, label = ifelse(value >= 10, as.character(paste(round(value),"%",sep="")), NA)),
+#                 position = position_stack(vjust=0.5))
+#  geom_label(aes(x = Group, y = value, label = round(value)))
+#  
+#  
+#printing plot
+#q5_1
+
+#saving plot to files
+#ggsave(filename = 'Q5_plot.png', width = 13, height = 7)
+
+
+```
+
+```{r q5_2}
+#filtering out responses of those who've read more than 0 print issues
+print_likert_df_1 <- gvm_clean %>%
+  filter(num_issues != 0)
+
+#making df for print likert questions
+print_likert_df <- select(print_likert_df_1, starts_with("print_") & ends_with("_likert"), age)
+
+#renaming levels in likert df 
+print_likert_df <- print_likert_df %>%
+  mutate_all(~ case_when(. %in% 1:2 ~ "Disagree",
+                         . == 3 ~ "Neutral",
+                         . %in% 4:5 ~ "Agree",
+                         TRUE ~ as.character(.)))
+
+#making all variables factors so that likert function works
+print_likert_df <- data.frame(lapply(print_likert_df, as.factor))
+
+savecopy_print_likert_df <- print_likert_df
+
+#getting percentages by age group
+wl_format <- likert(print_likert_df[,1:4], grouping=print_likert_df[,5])
+
+
+#placing resulting format in a data frame
+print_likert_df <- print(as.vector(wl_format))
+
+#pivoting data frame for plotting
+print_likert_df_m <- melt(print_likert_df)
+
+#making value numeric
+print_likert_df_m$value <- as.numeric(print_likert_df_m$value)
+
+#Renaming levels of variables for plotting 
+print_likert_df_m <- print_likert_df_m %>%
+  mutate(Item= case_when(
+    Item == 'print_enjoy_likert' ~ 'I enjoy reading \nthe printed publication.',
+    Item == 'print_design_likert' ~ 'The design and visual \nelements aid in my \nunderstanding and \nenjoyment of the text.',
+    Item == 'print_connected_likert' ~ 'I feel more connected to \nGrand Valley State University \nafter the print issues.',
+    Item == 'print_proud_likert' ~ 'Reading print issues of Grand \nValley Magazine makes me \nproud to be part of the \nGVSU community.',
+    TRUE ~ as.character(Item)
+  ))
+
+
+print_likert_df_m$variable <- factor(print_likert_df_m$variable, levels=c("Disagree","Neutral","Agree"))
+print_likert_df_m$Item <- factor(print_likert_df_m$Item, levels=c("The design and visual \nelements aid in my \nunderstanding and \nenjoyment of the text.",
+                          "I enjoy reading \nthe printed publication.",
+                          "I feel more connected to \nGrand Valley State University \nafter the print issues.",
+                          "Reading print issues of Grand \nValley Magazine makes me \nproud to be part of the \nGVSU community."))
+
+#facet by question with rows of ages
+q5_2 <- print_likert_df_m %>% ggplot(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = variable))+
+  geom_bar(stat="identity", color ="black",position=position_stack(reverse = TRUE)) +
+  facet_wrap(~Item,nrow = 1) +
+  coord_flip() +
+  theme_bw()+
+  labs(fill = "Response",
+       x = "Age",
+       y = "Percent",
+       title = "To what extent do you agree with the following questions?",
+       caption = "Among those who've read at least 1 issue \nShowing percentage labels for Agree and Disagree") +
+  theme(legend.position = "bottom",
+        plot.caption = element_text(hjust = 0.5,size = 13),
+        aspect.ratio = 3,
+        strip.text = element_text(size = 7.5)) +
+  scale_fill_manual(values = c("orange","grey","skyblue")) +
+  geom_label(aes(label = ifelse(variable != "Neutral",paste(round(value),"%",sep = ""),NA)),
+             #fill = "white",
+             position = position_stack(vjust = .5, reverse = TRUE),
+             show.legend = FALSE) 
+  
+                 
+                 
+            
+  
+#printing plots
+q5_2
+
+#saving plot to files
+ggsave(filename = 'age_chi_square_test_foster/Q5_plot.png', width = 13, height = 7)
+```
+
+Q4
+```{r q4_1 no longer using this version}
+
+#website_likert_df_1 <- gvm_clean %>%
+#  filter(num_articles != 0)
+
+#website_likert_df <- select(website_likert_df_1, starts_with("website_") & ends_with("_likert"), age)
+
+#making all variables factors so that likert function works
+#website_likert_df <- data.frame(lapply(website_likert_df, as.factor))
+
+#getting percentages by age group
+#wl_format <- likert(website_likert_df[,1:5], grouping=website_likert_df[,6])
+#placing resulting format in a data frame
+#website_likert_df <- print(as.vector(wl_format))
+
+#pivoting data frame for plotting
+#website_likert_df_m <- melt(website_likert_df)
+#Renaming levels of variables for plotting 
+#website_likert_df_m <- website_likert_df_m %>%
+#  mutate(Item= case_when(
+#    Item == 'website_enjoy_likert' ~ 'I enjoy reading GVM website',
+#    Item == 'website_navigate_likert' ~ 'The website is easy to navigate',
+#    Item == 'website_design_likert' ~ 'Design & Visual Elements \naid in Understanding \n& Enjoyment',
+#    Item == 'website_connected_likert' ~ 'I feel more connected to \nGVSU after reading GVM website',
+#    Item == 'website_proud_likert' ~ 'Reading GVM website makes \nme proud to be part of \nthe GVSU community',
+#    TRUE ~ as.character(Item)
+#  ))
+#website_likert_df_m <- website_likert_df_m %>%
+#  mutate(variable= case_when(
+#    variable == '1' ~ 'Strongly Disagree',
+#    variable == '2' ~ 'Slightly Disagree',
+#    variable == '3' ~ 'Neutral',
+#    variable == '4' ~ 'Slightly Agree',
+#    variable == '5' ~ 'Strongly Agree',
+#    TRUE ~ as.character(variable)
+ # ))
+
+
+
+#facet by question with rows of ages
+#q4_1 <- website_likert_df_m %>% ggplot()+
+#  geom_bar(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = fct_relevel(variable,"Strongly Disagree","Slightly Disagree","Neutral","Slightly Agree","Strongly Agree")), 
+ #              position=position_stack(reverse = TRUE), stat="identity", color ="black") +
+#  facet_wrap(~Item,nrow = 1) +
+#  coord_flip() +
+#  theme_bw()+
+#  facet_wrap(~Item, nrow = 1) +
+#  labs(fill = "Response",
+#       x = "Age",
+#       y = "Percent",
+#       title = "To what extent do you agree with the following questions?",
+#       caption = "Among those who've read at least 1 article \nShowing percentage labels for values greater than 10") +
+ # theme(legend.position = "bottom",
+#        plot.caption = element_text(hjust = 0.5,size = 13)) +
+#  theme(aspect.ratio = 3,
+#        strip.text = element_text(size = 7)) +
+##  scale_fill_colorblind() +
+#  geom_label(aes(x=Group, y = value, label = ifelse(value >= 10, as.character(paste(round(value),"%",sep="")), NA)),
+#                 position = position_stack(vjust=0.5))
+#  geom_label(aes(x = Group, y = value, label = round(value)))
+  
+#printing plots
+#q4_1
+```
+
+```{r q4_2}
+#filtering out responses of those who've read more than zero website articles
+website_likert_df_1 <- gvm_clean %>%
+  filter(num_articles != 0)
+
+#making df for website likert questions
+website_likert_df <- select(website_likert_df_1, starts_with("website_") & ends_with("_likert"), age)
+
+#renaming levels in likert df 
+website_likert_df <- website_likert_df %>%
+  mutate_all(~ case_when(. %in% 1:2 ~ "Disagree",
+                         . == 3 ~ "Neutral",
+                         . %in% 4:5 ~ "Agree",
+                         TRUE ~ as.character(.)))
+
+#making all variables factors so that likert function works
+website_likert_df <- data.frame(lapply(website_likert_df, as.factor))
+
+#hold this df for tables
+savecopy_website_likert_df <- website_likert_df
+
+#getting percentages by age group
+wl_format <- likert(website_likert_df[,1:5], grouping=website_likert_df[,6])
+
+#placing resulting format in a data frame
+website_likert_df <- print(as.vector(wl_format))
+
+#pivoting data frame for plotting
+website_likert_df_m <- melt(website_likert_df)
+
+#making value numeric
+website_likert_df_m$value <- as.numeric(website_likert_df_m$value)
+
+#Renaming levels of variables for plotting 
+website_likert_df_m <- website_likert_df_m %>%
+  mutate(Item= case_when(
+    Item == 'website_enjoy_likert' ~ 'I enjoy reading GVM website',
+    Item == 'website_navigate_likert' ~ 'The website is \neasy to navigate',
+    Item == 'website_design_likert' ~ 'Design & Visual Elements \naid in Understanding \n& Enjoyment',
+    Item == 'website_connected_likert' ~ 'I feel more connected to \nGVSU after reading \nthe GVM website',
+    Item == 'website_proud_likert' ~ 'Reading GVM website makes \nme proud to be part of \nthe GVSU community',
+    TRUE ~ as.character(Item)
+  ))
+
+
+website_likert_df_m$variable <- factor(website_likert_df_m$variable, levels=c("Disagree","Neutral","Agree"))
+
+#facet by question with rows of ages
+q4_2 <- website_likert_df_m %>% ggplot(aes(x = fct_relevel(Group,"66+","50-65","36-49","25-35","17-24"), y=value, fill = variable))+
+  geom_bar(stat="identity", color ="black",position=position_stack(reverse = TRUE)) +
+  facet_wrap(~Item,nrow = 1) +
+  coord_flip() +
+  theme_bw()+
+  labs(fill = "Response",
+       x = "Age",
+       y = "Percent",
+       title = "To what extent do you agree with the following questions?",
+       caption = "Among those who've read at least 1 article \nShowing percentage labels for values greater than 10") +
+  theme(legend.position = "bottom",
+        plot.caption = element_text(hjust = 0.5,size = 13),
+        aspect.ratio = 3,
+        strip.text = element_text(size = 7.5)) +
+  scale_fill_manual(values = c("orange","grey","skyblue")) +
+  geom_label(aes(label = ifelse(variable != "Neutral",paste(round(value),"%",sep = ""),NA)),
+             #fill = "white",
+             position = position_stack(vjust = .5, reverse = TRUE),
+             show.legend = FALSE) 
+  
+                 
+                 
+            
+  
+#printing plots
+q4_2
+
+#saving plot to files
+ggsave(filename = 'age_chi_square_test_foster/Q4_plot.png', width = 13, height = 7)
+```
+
+Q4 & Q5 tables
+```{r q4 and q5 tables}
+#-------------------------------------------------------------------------------#
+#                              Q4 Tables                                        #
+#-------------------------------------------------------------------------------#
+
+age_counts_website_likert_df <- savecopy_website_likert_df %>%
+  group_by(age) %>% summarize(Age = n())
+
+#formatting q4 data
+summary_df_websitelikert <- savecopy_website_likert_df %>%
+  pivot_longer(starts_with("website_"), names_to = "item", values_to = "likert") %>%
+  group_by(item, age, likert) %>%
+  summarize(count = n()) %>%
+  pivot_wider(names_from = likert, values_from = count, values_fill = 0)
+
+#Count of each response by each age group for each likert item table
+q4_age_table <- flextable::qflextable(summary_df_websitelikert)%>%
+  set_header_labels(
+    age = "Age",
+    item = "Item")
+
+#Count of each age group table
+q4_age_count_table <- flextable::qflextable(age_counts_website_likert_df)%>%
+  set_header_labels(
+    age = "Age",
+    Age = "Count")
+
+#counts of total reponses for each 
+q4_item_count <- savecopy_website_likert_df %>%
+  pivot_longer(starts_with("website_"), names_to = "item", values_to = "likert") %>%
+  group_by(item, likert) %>%
+  summarize(count = n()) %>%
+  pivot_wider(names_from = likert, values_from = count, values_fill = 0)
+
+#Count of each age group table
+q4_item_count_table <- flextable::qflextable(q4_item_count)%>%
+  set_header_labels(
+    item = "Item")
+
+#saving Q4 tables
+save_as_image(q4_age_table,path = "age_chi_square_test_foster/q4_age_table.png")
+save_as_image(q4_age_count_table,path = "age_chi_square_test_foster/q4_age_count_table.png")
+save_as_image(q4_item_count_table,path = "age_chi_square_test_foster/q4_item_count_table.png")
+
+#-------------------------------------------------------------------------------#
+#                              Q5 Tables                                        #
+#-------------------------------------------------------------------------------#
+age_counts_print_likert_df <- savecopy_print_likert_df %>%
+  group_by(age) %>% summarize(Age = n())
+
+#formatting q5 data
+summary_df_printlikert <- savecopy_print_likert_df %>%
+  pivot_longer(starts_with("print_"), names_to = "item", values_to = "likert") %>%
+  group_by(item, age, likert) %>%
+  summarize(count = n()) %>%
+  pivot_wider(names_from = likert, values_from = count, values_fill = 0)
+
+#Count of each response by each age group for each likert item table
+q5_age_table <- flextable::qflextable(summary_df_printlikert)%>%
+  set_header_labels(
+    age = "Age",
+    item = "Item")
+
+#Count of each age group table
+q5_age_count_table <- flextable::qflextable(age_counts_print_likert_df)%>%
+  set_header_labels(
+    age = "Age",
+    Age = "Count")
+
+#counts of total reponses for each 
+q5_item_count <- savecopy_print_likert_df %>%
+  pivot_longer(starts_with("print_"), names_to = "item", values_to = "likert") %>%
+  group_by(item, likert) %>%
+  summarize(count = n()) %>%
+  pivot_wider(names_from = likert, values_from = count, values_fill = 0)
+
+#Count of each age group table
+q5_item_count_table <- flextable::qflextable(q5_item_count)%>%
+  set_header_labels(
+    item = "Item")
+
+#saving q5 tables
+save_as_image(q5_age_table,path = "age_chi_square_test_foster/q5_age_table.png")
+save_as_image(q5_age_count_table,path = "age_chi_square_test_foster/q5_age_count_table.png")
+save_as_image(q5_item_count_table,path = "age_chi_square_test_foster/q5_item_count_table.png")
+
+#printing tables
+q4_age_table
+q4_age_count_table
+q4_item_count_table
+q5_age_table
+q5_age_count_table
+q5_item_count_table
+```
+
+```{r Year Plots}
+#Q1 from 2021
+most_info_21 <- data.frame(
+  Response = c("Emails from GVSU", 
+               "Grand Valley Magazine", 
+               "Other GVSU Publications",
+               "Local or National Media",
+               "Word of Mouth/Other Alumni",
+               "The Lanthorn",
+               "Social Media",
+               "Other"),
+  Count = c(260, 211, 50, 62, 82, 23, 147, 29)
+)
+most_info_21 <- my_perc_funct_2021(most_info_21)
+#remember to recode Q1 in 2023 
+
+#recoding 2023 for same 2021 levels
+most_info_23 <- most_info_df  %>%
+  select(Response,count) %>% 
+  mutate(Response= case_when(
+    Response == 'Grand Valley Magazine Print Issues' ~ 'Grand Valley Magazine',
+    Response == 'Grand Valley Magazine Website' ~ 'Grand Valley Magazine',
+    TRUE ~ as.character(Response,most_info_df )
+  ))
+#combine the counts for Issues and Website
+most_info_23 <- most_info_23 %>% 
+  group_by(Response) %>% 
+  summarize(Count = sum(count))
+
+#add percent columb to 2023 data
+most_info_23$Percent <- round((most_info_23$Count / sum(most_info_23$Count)) * 100,2)
+
+#combined 2021-2023 data
+most_info_2123 <- rbind(transform(most_info_21, Year = "2021"),
+                        transform(most_info_23, Year = "2023"))
+
+#plotting both years
+most_info_p <- most_info_2123 %>% ggplot() +
+  geom_bar(stat = "identity",
+           color = "black",
+           width = .8,
+           position = position_dodge(),
+           aes(x = fct_relevel(Response,
+                               "Grand Valley Magazine",
+                               "Emails from GVSU",
+                               "Social Media",
+                               "Word of Mouth/Other Alumni",
+                               "Local or National Media",
+                               "Other GVSU Publications",
+                               "The Lanthorn",
+                               "Other"),
+           y= Percent, fill = Year)) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 35)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  labs(title = "Where do you acquire most of your information about GVSU? \n(mark all that apply) | 2021 & 2023",
+     x = element_blank(),
+     y = "Percent",
+     caption = "For comparison, responses 'GVM Print Issues' and 'GVM Website' are combined in 2023 data") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.caption = element_text(hjust = .5)) +
+  theme_default 
+
+most_info_p
+
+
+
+
+#Q3 from 2021
+where_read_21 <- data.frame(
+  Response = c("GVM Website", "Print issues", "Both", "I don't read the GVM"),
+  Count = c(45, 151, 82, 60)
+)
+where_read_21 <- my_perc_funct_2021(where_read_21)
+
+
+#creating 2023 data
+where_read_23 <- my_2023_funct(gvm_clean,where_read)
+where_read_23 <- rename(where_read_23, Response = where_read)
+
+#combined 2021-2023 data
+where_read_2123 <- rbind(transform(where_read_21, Year = "2021"),
+                         transform(where_read_23, Year = "2023"))
+
+#plotting both years 
+where_read_p <- where_read_2123 %>% ggplot() +
+  geom_bar(stat = "identity", 
+           width = .8,
+           color = "black",
+           position = position_dodge(),
+           aes(x = fct_relevel(Response,"Print issues","I don't read the GVM","Both","GVM Website"), y= Percent, fill = Year)) +
+  expand_limits(y = c(0, 50)) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  labs(title = "How do you read GVM? | 2021 & 2023",
+     x = element_blank(),
+     y = "Percent") +
+  theme_default +
+ theme(plot.caption = element_text(hjust = .5)) 
+
+where_read_p
+
+
+
+
+#Q4 from 2021
+num_issues_21 <- data.frame(
+  Response = c("0", "1", "2", "3"),
+  Count = c(97, 38, 77, 59)
+)
+num_issues_21 <- my_perc_funct_2021(num_issues_21)
+
+
+#creating 2023 data
+num_issues_23 <- my_2023_funct(gvm_clean,num_issues)
+num_issues_23 <- rename(num_issues_23, Response = num_issues)
+
+#combined 2021-2023 data
+num_issues_2123 <- rbind(transform(num_issues_21, Year = "2021"),
+                         transform(num_issues_23, Year = "2023"))
+
+#plotting both years of num_articles
+num_issues_p <- num_issues_2123 %>% ggplot() +
+  geom_bar(stat = "identity", 
+           width = .8,
+           color = "black",
+           position = position_dodge(),
+           aes(x = Response, y= Percent, fill = Year)) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 40)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  labs(title = "How many PRINT issues have you read in the last year? | 2021 & 2023",
+     x = element_blank(),
+     y = "Percent",
+     caption = "For comparison, 2021 data is filtered for those who've read 0-3 articles") +
+  theme_default
+
+num_issues_p
+
+
+
+
+
+
+#Q8 from 2021
+gvsu_engagement_21 <- data.frame(
+  Response = c("Disagree", "Neutral", "Agree"),
+  Count = c(29,173,131)
+)
+gvsu_engagement_21 <- my_perc_funct_2021(gvsu_engagement_21)
+
+#creating 2023 data
+gvsu_engagement_23 <- my_2023_funct(gvm_clean,gvsu_engagement)
+gvsu_engagement_23 <- rename(gvsu_engagement_23, Response = gvsu_engagement)
+
+#combined 2021-2023 data
+gvsu_engagement_2123 <- rbind(transform(gvsu_engagement_21, Year = "2021"),
+                              transform(gvsu_engagement_23, Year = "2023"))
+
+#plotting both years of num_articles
+gvsu_engagement_p <- gvsu_engagement_2123 %>% ggplot() +
+  geom_bar(stat = "identity", 
+           width = .8,
+           color = "black",
+           position = position_dodge(),
+           aes(x = fct_relevel(Response,'Disagree','Neutral','Agree'), y= Percent, fill = Year)) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 55)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  labs(title = "After reading Grand Valley Magazine I am more likely to engage in
+events/activities associated with GVSU | 2021 & 2023",
+     x = element_blank(),
+     y = "Percent") +
+  theme_default
+
+gvsu_engagement_p
+
+
+
+#Q10 from 2021
+num_articles_21 <- data.frame(
+  Response = c("0 articles", 
+               "1-4 articles", 
+               "5-9 articles",
+               "10+ articles"),
+  Count = c(123,117,63,29)
+)
+num_articles_21 <- my_perc_funct_2021(num_articles_21)
+
+#recoding 2023 for same 2021 levels
+temp_df <- gvm_clean %>%
+  select(num_articles) %>% 
+  mutate(variable= case_when(
+    num_articles == '0' ~ '0 articles',
+    num_articles == '1' ~ '1-4 articles',
+    num_articles == '2' ~ '1-4 articles',
+    num_articles == '3' ~ '1-4 articles',
+    num_articles == '4' ~ '1-4 articles',
+    num_articles == '5' ~ '5-9 articles',
+    num_articles == '6' ~ '5-9 articles',
+    num_articles == '7' ~ '5-9 articles',
+    num_articles == '8' ~ '5-9 articles',
+    num_articles == '9' ~ '5-9 articles',
+    num_articles == '10' ~ '10+ articles',
+    num_articles == '15' ~ '10+ articles',
+    TRUE ~ as.character(num_articles,gvm_clean)
+  ))
+
+#creating 2023 data
+num_articles_23 <- my_2023_funct(temp_df,variable)
+num_articles_23 <- rename(num_articles_23, Response = variable)
+rm(temp_df)
+
+#combined 2021-2023 data
+num_articles_2123 <- rbind(transform(num_articles_21, Year = "2021"),
+                           transform(num_articles_23, Year = "2023"))
+
+
+#plotting both years of num_articles
+num_articles_p <- num_articles_2123 %>% ggplot() +
+  geom_bar(stat = "identity", 
+           width = .8,
+           color = "black",
+           position = position_dodge(),
+           aes(x = fct_relevel(Response,'0 articles','1-4 articles','5-9 articles','10+ articles'), y= Percent, fill = Year)) +
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 40)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  labs(title = "How many articles have you read on the Grand Valley Magazine \nWEBSITE in the last year? | 2021 & 2023",
+     x = element_blank(),
+     y = "Percent",
+     caption = "For comparison, 2023 data was recoded to 2021 levels") +
+  theme_default +
+  theme(plot.caption = element_text(hjust = .5))
+
+num_articles_p
+
+
+#Q11 from 2021
+drive_to_website_21 <- data.frame(
+  Response = c("Word of Mouth", 
+               "Email", 
+               "Social Media",
+               "Link within printed Issue",
+               "Doing research"),
+  Count = c(48,193,97,76,16)
+)
+drive_to_website_21 <- my_perc_funct_2021(drive_to_website_21)
+
+#creating 2023 data
+drive_to_website_23 <- my_2023_funct(gvm_clean, drive_to_website)
+drive_to_website_23 <- rename(drive_to_website_23, Response = drive_to_website)
+
+#combined 2021-2023 data
+drive_to_website_2123 <- rbind(transform(drive_to_website_21, Year = "2021"),
+                               transform(drive_to_website_23, Year = "2023"))
+
+#plot both years
+drive_to_website_p <- drive_to_website_2123 %>% ggplot() + 
+  geom_bar(aes(x = fct_relevel(Response,"Email",
+                              "Link within printed Issue",
+                              "Social Media","Word of Mouth",
+                              "Doing research"), y = Percent, fill = Year),
+           stat = "identity",
+           color = "black",
+           position = position_dodge(width = 0.8),
+           width = 0.8) + 
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 55)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "What is most likely to drive you to visit the \nGrand Valley Magazine WEBSITE? | 2021 & 2023",
+       x = element_blank(),
+       y = "Percent") +
+  theme_default
+
+drive_to_website_p
+
+
+
+#Q13 from 2021
+website_only_21 <- data.frame(
+  Response = c("Yes", 
+               "No"),
+  Count = c(202,129)
+)
+website_only_21 <- my_perc_funct_2021(website_only_21)
+
+#recoding 2023 for same 2021 levels
+temp_df <- gvm_clean %>%
+  select(website_only, num_articles, num_issues) %>% 
+  subset(website_only != "I don't know/I'm not sure") #%>% 
+  #subset(num_articles != 0) %>% 
+  #subset(num_issues != 0) #decided not to filter given that 2021 data isn't restricted to readers
+
+
+  
+#creating 2023 data             
+website_only_23 <- my_2023_funct(temp_df,website_only)
+website_only_23 <- rename(website_only_23, Response = website_only)
+
+#combined 2021-2023 data
+website_only_2123 <- rbind(transform(website_only_21, Year = "2021"),
+                           transform(website_only_23, Year = "2023"))
+
+#plotting both years of website_only
+website_only_p <- website_only_2123 %>% ggplot() + 
+  geom_bar(aes(x = fct_relevel(Response,"No","Yes"), y = Percent, fill = Year),
+           stat = "identity",
+           color = "black",
+           position = position_dodge(width = 0.8),
+           width = 0.8) + 
+  scale_y_continuous(n.breaks=10,expand = c(0,0)) +
+  expand_limits(y = c(0, 70)) +
+  scale_fill_manual(values = c("#000000", "#0054A6")) +
+  labs(title = "Would you read Grand Valley Magazine if it was online only? | 2021 & 2023",
+       x = element_blank(),
+       y = "Percent",
+       caption = "For comparison, 2023 data is filtered for soley 'Yes' or 'No' responses") +
+  theme_default +
+  theme(plot.caption = element_text(hjust = .5))
+
+website_only_p
+
+
+#saving 2021 and 2023 comparison plots
+ggsave(filename = "website_only_p2123.png", width = 7.5, height = 4, plot = website_only_p, path = "/age_chi_square_test_foster")
+ggsave(filename = "drive_to_website_p2123.png", width = 7.5, height = 4, plot = drive_to_website_p, path = "/age_chi_square_test_foster")
+ggsave(filename = "num_articles_p2123.png", width = 7.5, height = 4, plot = num_articles_p, path = "/age_chi_square_test_foster")
+ggsave(filename = "gvsu_engagement_p2123.png", width = 7.5, height = 4, plot = gvsu_engagement_p, path = "/age_chi_square_test_foster")
+ggsave(filename = "num_issues_p2123.png", width = 7.5, height = 4, plot = num_issues_p, path = "/age_chi_square_test_foster")
+ggsave(filename = "where_read_p2123.png", width = 7.5, height = 4, plot = where_read_p, path = "/age_chi_square_test_foster")
+ggsave(filename = "most_info_p2123.png", width = 9, height = 5, plot = most_info_p, path = "/age_chi_square_test_foster")
+
+
+
+
+```
+
+```{r 2123 chi-square testing & obs_expcted tables, echo=TRUE}
+#getting all data frames ending in _2123, since those are comparison dfs
+list_df <- mget(ls(pattern = "_2123$"))
+
+# Remove post-hoc from the comparison iteration since it causes errors when in it
+list_df <- list_df[setdiff(names(list_df), "post_hoc_list_2123")]
+list_df <- list_df[setdiff(names(list_df), "obs_excp_tables_2123")]
+
+
+# Iterate through the list of relevant data frames
+for (df_name in names(list_df)) {
+  
+  #dedicating a df within each iteration to use
+  df2123 <- list_df[[df_name]]
+  
+  #------------------------------------------------------------
+  #                 Chi-Square Testing
+  #------------------------------------------------------------
+  
+  #making new df for testing
+  df2123_test <- data.frame(
+  Year = as.factor(rep(df2123$Year, df2123$Count)),
+  Response = as.factor(rep(df2123$Response, df2123$Count))
+  )
+  
+  #making variables in df characters for testing purposes
+  df2123_test <- df2123_test %>% 
+    mutate(Year = as.character(Year),
+         Response = as.character(Response))
+  
+  
+  #chi square test
+  chisq_table <- chisq_test(df2123_test, Year ~ Response) %>% 
+    flextable() %>% 
+      set_formatter(p_value = function(x) {
+      formatC(x, format = "e", digits = 3)
+      }) %>%
+  set_caption(caption = paste(df_name,"N=",nrow(df2123_test), sep = " "))
+  
+  
+  
+  #printing plot
+  print(chisq_table)
+  
+  #saving flextable image
+  save_as_image(chisq_table,path = paste0("age_chi_square_test_foster/",df_name, "_chisqtable.png"))
+  
+  #------------------------------------------------------------
+  #           Observed & Expected Count Tables
+  #------------------------------------------------------------
+  
+  
+  #dedicating a df within each iteration to use
+  df2123_tables <- list_df[[df_name]]
+  
+  
+  #create column number_in_year_group
+  Year_totals <- df2123_tables %>% 
+  group_by(Year) %>% 
+  summarize(number_in_year_group = sum(Count)) 
+  
+  #merging new column into df
+  df2123_tables <- merge(df2123_tables, Year_totals, by = 'Year')
+  
+  #create column category totals
+  category_totals <- df2123_tables %>% 
+  group_by(Response) %>% 
+  summarize(num_in_category = sum(Count)) 
+  
+  #merging new column into df
+  df2123_tables <- merge(df2123_tables, category_totals, by = 'Response')
+  
+  #print(df2123_tables)
+  
+  #Calculating observed and expected tables using function
+  result <- obs_excp_tables_2123(df2123_tables)
+  
+  #printing table
+  print(result$obs)
+  #saving flextable image
+  save_as_image(result$obs,path = paste0("age_chi_square_test_foster/",df_name, "_observed.png"))
+  
+  #printing table
+  print(result$exp)
+  #saving flextable image
+  save_as_image(result$exp,path = paste0("age_chi_square_test_foster/",df_name, "_expected.png"))
+}
+
+
+```
+
+```{r count totals}
+
+my_count_funct <- function(my_df,my_var) {
+  
+table <- flextable(as.data.frame(table(my_df[, my_var]))) %>%
+  set_header_labels(
+    Var1 = "Response",
+    Freq = "Count"
+  )
+return(table)
+
+}
+
+#Q2
+q2_counts <- my_count_funct(my_df = gvm_clean, my_var = "where_read") %>%
+  set_header_labels(
+    where_read = "Response")
+save_as_image(q2_counts,path = "age_chi_square_test_foster/q2_counts.png")
+
+
+#Q6
+q6_counts <- my_count_funct(my_df = gvm_clean, my_var = "gvsu_engagement") %>%
+  set_header_labels(
+    gvsu_engagement = "Response")
+save_as_image(q6_counts,path = "age_chi_square_test_foster/q6_counts.png")
+
+
+#Q8
+q8_counts <- my_count_funct(my_df = gvm_clean, my_var = "drive_to_website") %>%
+  set_header_labels(
+    drive_to_website = "Response")
+save_as_image(q8_counts,path = "age_chi_square_test_foster/q8_counts.png")
+
+
+
+
+
+#Q10
+q10_counts <- my_count_funct(my_df = gvm_clean, my_var = "website_engagment") %>%
+  set_header_labels(
+    website_engagment = "Response")
+save_as_image(q10_counts,path = "age_chi_square_test_foster/q10_counts.png")
+#NEED TO FIX
+
+
+
+#Q12
+q12_counts <- my_count_funct(my_df = gvm_clean, my_var = "opting") %>%
+  set_header_labels(
+    opting = "Response")
+save_as_image(q12_counts,path = "age_chi_square_test_foster/q12_counts.png")
+
+
+
+```
