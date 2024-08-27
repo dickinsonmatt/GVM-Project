@@ -1,0 +1,344 @@
+---
+title: "Grand Valley Magazine Project"
+author: "Matthew Dickinson & Foster Thorburn"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+# Data Import
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(readr)
+library(flextable)
+library(ggthemes)
+library(kableExtra)
+library(forcats)
+library(htmltools)
+library(webshot)
+library(tidymodels)
+```
+
+
+```{r data, warning = FALSE}
+gvm_data <- read_csv("GVM_data.csv")
+head(gvm_data) |> 
+  select(seq(1, 51, 11)) |>
+  select(-4) |>
+  flextable() |>
+  autofit() |>
+  fit_to_width(7.5)
+```
+
+
+
+# Preprocess
+```{r setting global theme, include = FALSE}
+theme_set(theme_bw())
+theme_default <- theme(
+    axis.ticks = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.x = element_blank())
+```
+
+```{r add retirees and get relation counts}
+# gvm_data |> 
+#   select(where_read, starts_with("relation"))
+# 
+# gvm_data |> 
+#   select(where_read, starts_with("relation")) |> 
+#   filter(!is.na(relation_text)) |> 
+#   pull(relation_text) 
+# 
+
+gvm_data <- gvm_data |>
+  mutate(relation_retiree = str_detect(tolower(relation_text), "retire"))
+
+relation_nums <-  gvm_data |> 
+  select(where_read, starts_with("relation")) |> 
+  select(-c(relation_other, relation_text), relation_family_student = relation_family_undergrad) |> 
+  mutate(relation_retiree = relation_retiree * 1,
+         relation_family_faculty_2 = as.logical(relation_family_faculty),
+         relation_family_student_2 = as.logical(relation_family_student)) |> 
+  mutate(relation_family = (relation_family_faculty_2 | relation_family_student_2)) |> 
+  select(-c(relation_family_faculty_2, relation_family_student_2)) |> 
+  pivot_longer(!where_read, names_to = "relation", values_to = "selection") |> 
+  select(relation, where_read, selection) |> 
+  mutate(relation = str_replace_all(relation, "relation_", ""),
+         relation = str_replace_all(relation, "_", " "),
+         relation = str_to_title(relation),
+         relation = str_replace_all(relation, "Grad", "Graduate Student"),
+         relation = str_replace_all(relation, "Undergrad", "Undergraduate Student"),
+         relation = str_replace_all(relation, "Family Faculty", "Faculty - Family"),
+         relation = str_replace_all(relation, "Family Student", "Student - Family")) |> 
+  group_by(relation) |> 
+  summarize(number_in_relation = sum(selection, na.rm = TRUE))
+```
+
+
+
+# Question 2
+
+```{r Q2 data}
+Q2_reading_nums <-  gvm_data |> 
+  select(where_read, starts_with("relation")) |> 
+  select(-c(relation_other, relation_text), relation_family_student = relation_family_undergrad) |> 
+  mutate(relation_retiree = relation_retiree * 1) |> 
+  pivot_longer(!where_read, names_to = "relation", values_to = "selection") |> 
+  select(relation, where_read, selection) |> 
+  mutate(relation = str_replace_all(relation, "relation_", ""),
+         relation = str_replace_all(relation, "_", " "),
+         relation = str_to_title(relation),
+         relation = str_replace_all(relation, "Grad", "Graduate Student"),
+         relation = str_replace_all(relation, "Undergrad", "Undergraduate Student"),
+         relation = str_replace_all(relation, "Family Faculty", "Faculty - Family"),
+         relation = str_replace_all(relation, "Family Student", "Student - Family")) |> 
+  group_by(where_read) |> 
+  summarize(number_in_read = sum(selection, na.rm = TRUE))
+
+  
+Q2_data <- gvm_data |> 
+  select(where_read, starts_with("relation")) |> 
+  select(-c(relation_other, relation_text), relation_family_student = relation_family_undergrad) |> 
+  mutate(relation_retiree = relation_retiree * 1,
+         relation_family_faculty_2 = as.logical(relation_family_faculty),
+         relation_family_student_2 = as.logical(relation_family_student)) |> 
+  mutate(relation_family = (relation_family_faculty_2 | relation_family_student_2)) |> 
+  select(-c(relation_family_faculty_2, relation_family_student_2)) |>  
+  pivot_longer(!where_read, names_to = "relation", values_to = "selection") |> 
+  select(relation, where_read, selection) |> 
+  mutate(relation = str_replace_all(relation, "relation_", ""),
+         relation = str_replace_all(relation, "_", " "),
+         relation = str_to_title(relation),
+         relation = str_replace_all(relation, "Grad", "Graduate Student"),
+         relation = str_replace_all(relation, "Undergrad", "Undergraduate Student"),
+         relation = str_replace_all(relation, "Family Faculty", "Faculty - Family"),
+         relation = str_replace_all(relation, "Family Student", "Student - Family")) |> 
+  group_by(relation, where_read) |> 
+  summarize(observed = sum(selection, na.rm = TRUE)) |> 
+  ungroup() |> 
+  left_join(relation_nums) |> 
+  left_join(Q2_reading_nums) |> 
+  mutate(relation_percent = (observed/number_in_relation)*100,
+         category_percent = (observed/number_in_read)*100,
+         relation = as.factor(relation),
+         where_read = as.factor(where_read))
+
+
+
+Q2_data$where_read <- factor(Q2_data$where_read, levels = c("GVM Website", "Both", "I don't read the GVM", "Print issues"))
+
+# Q2_data |>
+#   filter(relation == "Donor") |>
+#   pull(relation_percent) |>
+#   sum()
+# 
+# Q2_data |> 
+#   filter(where_read == "Both") |> 
+#   pull(category_percent) |> sum()
+
+```
+
+
+```{r labels for relation headers}
+relations <- c(paste0("Alumni (n=", relation_nums$number_in_relation[1], ")"),
+        paste0("Donor (n=", relation_nums$number_in_relation[2], ")"),
+        paste0("Faculty (n=", relation_nums$number_in_relation[3], ")"),
+        paste0("Faculty - Family (n=", relation_nums$number_in_relation[4], ")"),
+        paste0("Family (n=", relation_nums$number_in_relation[5], ")"),
+        paste0("Graduate Student (n=", relation_nums$number_in_relation[6], ")"),
+        paste0("Retiree (n=", relation_nums$number_in_relation[7], ")"),
+        paste0("Student - Family (n=", relation_nums$number_in_relation[8], ")"),
+        paste0("Undergrad Student (n=", relation_nums$number_in_relation[9], ")")
+        )
+
+names(relations) <- c("Alumni", "Donor", "Faculty", "Faculty - Family", "Family", "Graduate Student", "Retiree", "Student - Family", "Undergraduate Student")
+```
+
+```{r Q2 plot}
+Q2_plot_overall <- Q2_data |> 
+  filter(!(relation %in% c("Faculty - Family", "Student - Family", "Retiree"))) |> 
+  ggplot(aes(where_read, relation_percent, fill = where_read)) +
+  geom_col(position = "dodge", color = "black", linewidth = .5) +
+  scale_fill_colorblind() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, .1)),
+    breaks = seq(0, 60, 10)
+  ) +
+  labs(
+    x = "Relation",
+    fill = "Response",
+    y = "Percent",
+    title = "How do you read Grand Valley Magazine?",
+    caption = "Family is comprised of faculty and student family"
+  ) +
+  theme_default +
+  facet_wrap(~relation, 
+    labeller = labeller(relation = relations)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        plot.caption = element_text(hjust = .5))
+
+Q2_plot_overall
+```
+
+
+```{r}
+Q2_zoom <- Q2_data |> 
+  filter(relation %in% c("Alumni", "Donor", "Family", "Undergraduate Student")) |> 
+  ggplot(aes(where_read, relation_percent, fill = where_read)) +
+  geom_col(position = "dodge", color = "black", linewidth = .5) +
+  scale_fill_colorblind() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, .1)),
+    breaks = seq(0, 60, 10)
+  ) +
+  labs(
+    x = "Relation",
+    fill = "Response",
+    y = "Percent",
+    title = "How do you read Grand Valley Magazine?",
+    caption = "Family is comprised of faculty and student family"
+  ) +
+  theme_default +
+  facet_grid(~relation, 
+    labeller = labeller(relation = relations)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        plot.caption = element_text(hjust = .5))
+
+Q2_zoom
+```
+# Tables
+```{r saving graphs}
+ggsave(
+    filename="Q2_relation_plot.svg",
+    plot=Q2_plot_overall,
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+
+
+ggsave(
+    filename="Q2_relation_plot.png",
+    plot=Q2_plot_overall,
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+
+ggsave(
+    filename="Q2_relation_plot_zoom.svg",
+    plot=Q2_zoom,
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+
+ggsave(
+    filename="Q2_relation_plot_zoom.png",
+    plot=Q2_zoom,
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+
+```
+
+
+```{r exporting tables, message = FALSE}
+relation_table <- relation_nums |>
+  filter(str_detect(relation, "- Family", negate = TRUE)) |> 
+  select(Relation = relation, "Number in relation" = number_in_relation) |> 
+  flextable()
+
+save_as_image(
+  relation_table,
+  path = "~/MyR/GVM-Project/tables/relation_table.png"
+)
+
+Q2_table_counts <- Q2_reading_nums |> 
+  select("Response" = where_read, "Number in category" = number_in_read) |> 
+  flextable() |> 
+  height(height = 2)
+
+save_as_image(
+  Q2_table_counts,
+  path = "~/MyR/GVM-Project/tables/Q2_table_counts.png"
+)
+
+relation_table
+Q2_table_counts
+```
+
+
+# Chi Square tests
+
+```{r data to long}
+Q2_df <- tibble(
+  relation = rep(Q2_data$relation, Q2_data$observed),
+  response = rep(Q2_data$where_read, Q2_data$observed) ) |> 
+  mutate(relation = as.character(relation),
+         response = as.character(response))
+```
+
+```{r observed table}
+Q2_data |>
+  select(Relation = relation, Response  = where_read, observed) |>
+  pivot_wider(names_from = "Response", values_from = "observed") |>
+  filter(str_detect(Relation, "- Family|Retiree", negate = TRUE)) |> 
+  flextable() |>
+  add_header_lines(values = "Response") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Observed Counts") |>
+  fit_to_width(7)
+```
+
+```{r expected table}
+Q2_data |>
+  mutate("Expected Counts" = (number_in_relation*number_in_read)/sum(Q2_data$observed)) |>
+  select(Relation = relation, Response  = where_read, "Expected Counts") |>
+  pivot_wider(names_from = "Response", values_from = "Expected Counts") |>
+  filter(str_detect(Relation, "- Family|Retiree", negate = TRUE)) |> 
+  purrr::modify_if(~is.numeric(.), ~round(., 2)) |> 
+  flextable() |>
+  add_header_lines(values = "Response") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Expected Counts") |>
+  fit_to_width(7)
+```
+
+```{r Q2 chi square}
+Q2_cols <- Q2_df |> select(relation) |> distinct() |> as.vector() |> unlist()
+
+data_list <- list()
+
+for (method in Q2_cols){
+  dat <- Q2_df |>
+    filter(relation == method) |>
+    chisq_test(response ~ relation) 
+  data_list[[method]] <- dat
+}
+
+Q2_results <- do.call(rbind, data_list) 
+
+Q2_results <- cbind(relation = rownames(Q2_results), Q2_results)
+
+Q2_results |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = scientific(p_value, digits = 3)) |>
+  filter(str_detect(relation, "- Family|Retiree", negate = TRUE)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption("How do you read the Grand Valley Magazine?") 
+```

@@ -5,29 +5,745 @@ date: "`r Sys.Date()`"
 output: pdf_document
 ---
 
-* Question 1
 
-** Multi-select cannot do chi-square
+# Data Import
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
 
-* Question 3
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(readr)
+library(flextable)
+library(tidymodels)
+```
+
+
+
+```{r data import}
+data_files <- list.files("~/MyR/GVM-Project/chi-square-testing")
+
+for (i in seq_along(data_files)){
+
+  table_num = seq(1, 12, 2)[i]
+
+  table_name = paste0("Q", table_num, "_data")
+  
+  path = paste0("~/MyR/GVM-Project/chi-square-testing/", table_name, ".csv")
+  
+  assign(table_name,
+         read_csv(
+           path,
+           col_names = TRUE))
+  
+}
+```
+
+
+
+# Questions
+
+
+## Question 1
+
+**Where do you acquire most of your information about GV?**
+```{r Question 1 df}
+Q1_df <- data.frame(
+  age = rep(Q1_data$age, Q1_data$count),
+  Source = rep(Q1_data$location, Q1_data$count)
+)
+
+write_csv(Q1_df, file = "~/MyR/GVM-Project/chi-square-long-data/Q1_df.csv")
+```
+
+```{r Q1 observed counts table}
+Q1_data |>
+  select(Age = age, Source  = location, count) |>
+  pivot_wider(names_from = "Source", values_from = "count") |>
+  flextable() |>
+  add_header_lines(values = "Source") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Observed Counts") |>
+  fit_to_width(7)
+```
+
+
+```{r Q1 expected counts table}
+Q1_data |>
+  mutate("Expected Counts" = (number_in_age_group*num_in_category)/sum(Q1_data$count)) |>
+  select(Age = age, Source = location, `Expected Counts`) |>
+  pivot_wider(names_from = "Source", values_from = `Expected Counts`) |>
+  purrr::modify_if(~is.numeric(.), ~round(., 2)) |> 
+  flextable() |>
+  add_header_lines(values = "Source") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Expected Counts") |>
+  fit_to_width(7)
+```
+
+```{r Q1 chi-square}
+Q1_cols <- Q1_df |> select(Source) |> distinct() |> as.vector() |> unlist()
+
+data_list <- list()
+
+for (method in Q1_cols){
+  dat <- Q1_df |>
+    filter(Source == method) |>
+    chisq_test(age ~ Source) 
+  data_list[[method]] <- dat
+}
+
+Q1_results <- do.call(rbind, data_list) 
+
+Q1_results <- cbind(source = rownames(Q1_results), Q1_results)
+
+Q1_results |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = round(p_value, 6)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption("Where do you acquire most of your information about GV?") 
+```
+* GVM Print
+```{r Posthoc gvm print}
+# z test for two proportions
+# 2x2 table
+# age1 vs age2 by yes vs no (of each)
+# odds ratio (likelihood that age group)
+
+
+ages <- unique(Q1_df$age)
+
+post_hoc_list <- list()
+
+test_source = "GVM Print"
+
+
+for (group in 2:5){
+  current_test = 1
+  data <- Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+for (group in 3:5){
+  current_test = 2
+  data <-  Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q1_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q1_post_hoc |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < (0.001/choose(5,2)) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = round(p_value, 6)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", test_source))
+```
+
+
+
+* GVM Website
+
+```{r posthoc GVM website}
+ages <- unique(Q1_df$age)
+
+post_hoc_list <- list()
+
+test_source = "GVM Website"
+
+for (group in 2:5){
+  current_test = 1
+  data <- Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+for (group in 3:5){
+  current_test = 2
+  data <-  Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- Q1_df |> 
+    filter(Source == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Source) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q1_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q1_post_hoc |> 
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = round(p_value, 6)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", test_source))
+```
+
+
+* Word of mouth
+** Does not differ
+
+## Question 3
 
 ** How many PRINT issues have you read within the last year?
 
+```{r Q3 new df}
+Q3_df <- data.frame(
+  age = rep(Q3_data$age, Q3_data$count),
+  num_issues = rep(Q3_data$num_issues, Q3_data$count)
+)
 
-* Question 5
+Q3_df <- Q3_df |>
+  mutate(
+    age = as.factor(age),
+    num_issues = as.factor(num_issues)
+  )
 
-** Likert cannot do chi-square
-
-* Question 7
-
-** How many articles have you read on the Grand Valley Magazine WEBSITE in the last year?
+write_csv(Q3_df, file = "~/MyR/GVM-Project/chi-square-long-data/Q3_df.csv")
+```
 
 
-* Question 9
+```{r Q3 observed counts}
+Q3_data |>
+  select(Age = age, num_issues, count) |>
+  pivot_wider(names_from = num_issues, values_from = count) |>
+  flextable() |>
+  add_header_lines(values = "Number of issues") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Observed Counts")
+```
+
+
+```{r Q3 expected counts}
+Q3_data |>
+  mutate(expected_count = ((number_in_age_group)*(num_in_category))/sum(Q3_data$count)) |>
+  select(age, num_issues, observed = count, expected_count) |>
+  select(Age = age, num_issues, expected_count) |>
+  pivot_wider(names_from = num_issues, values_from = expected_count) |>
+  purrr::modify_if(~is.numeric(.), ~round(., 2)) |>
+  flextable()|>
+  add_header_lines("Number of issues") |>
+  align(i = 1, align = "center", part = "header") |> 
+  set_caption("Expected Counts")
+```
+
+
+```{r Q3 Chi Square overall}
+Q3_results <- chisq_test(Q3_df, age ~ num_issues) 
+
+Q3_results |>
+  mutate(
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = scientific(p_value, digits = 3)) |> 
+  flextable() |> 
+  align(j = 4, align = "right", part = "body") |> 
+  align(j = 4, align = "right", part = "header") 
+```
+
+```{r Q3 post hoc}
+# just find groups
+ages <- unique(Q1_df$age)
+
+post_hoc_list <- list()
+
+Q3_df <- Q3_df |> 
+  mutate(age = as.character(age),
+         num_issues = as.character(num_issues))
+
+test_df <- Q3_df
+
+for (group in 2:5){
+  current_test = 1
+  data <- test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ num_issues) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 3:5){
+  current_test = 2
+  data <-  test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ num_issues) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ num_issues) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ num_issues) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q3_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q3_post_hoc |> 
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = scientific(p_value, digits = 3)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", "Question 3"))
+
+```
+
+
+
+## Question 7
+
+
+```{r Q7 df}
+Q7_df <- data.frame(
+  age = rep(Q7_data$age, Q7_data$count),
+  num_articles = rep(Q7_data$num_articles, Q7_data$count)
+)
+
+Q7_df <- Q7_df |>
+  mutate(reading_level = case_when(
+    num_articles == 0 ~ "None",
+    num_articles %in% 1:5 ~ "Low (1-5)",
+    num_articles %in% 6:10 ~ "High (6-10)",
+    num_articles == 15 ~ "Very High (10+)"
+  ))
+
+write_csv(Q7_df, file = "~/MyR/GVM-Project/chi-square-long-data/Q7_df.csv")
+```
+
+
+```{r Q7 observed counts}
+# Q7_data |>
+#   select(Age = age , num_articles, count) |>
+#   pivot_wider(names_from = num_articles, values_from = count) |>
+#   flextable() |>
+#   add_header_lines(values = "Number of articles") |> 
+#   align(i = 1, align = "center", part = "header") |> 
+#   set_caption("Observed Counts") |>
+#   fit_to_width(7)
+```
+
+
+```{r Q7 expected counts, warning = FALSE}
+# Q7_data |>
+  # mutate(
+  #   expected_count = round(((number_in_age_group)*(num_in_category))/sum(Q7_data$count), 2)) |>
+  # select(Age = age, num_articles, expected_count) |> 
+  # pivot_wider(names_from = num_articles, values_from = expected_count) |> 
+  # flextable()|>
+  # add_header_lines(values = "Number of articles") |>
+  # align(i = 1, align = "center", part = "header") |> 
+  # set_caption("Expected Counts") |>
+  # fit_to_width(7)
+
+```
+
+
+
+```{r Q7 COLLAPSED observed counts}
+Q7_df |>
+  select(Age = age, reading_level) |>
+  pivot_wider(names_from = "reading_level",
+              values_from = "reading_level",
+              values_fn = list(reading_level = length)) |> 
+  flextable() |>
+  add_header_lines("Reading level on articles") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Observed Counts") |>
+  colformat_num(
+    na_str = "0"
+  )
+
+```
+
+
+```{r Q7 COLLAPSED expected counts, message = FALSE, warning = FALSE}
+age_total <- Q7_df |>
+  group_by(age) |> 
+  summarize(age_total = n())
+
+reading_total <- Q7_df |> 
+  group_by(reading_level) |> 
+  summarize(reading_total = n())
+  
+Q7_df |> 
+  group_by(age, reading_level) |> 
+  summarize(observed_count = n()) |> 
+  left_join(age_total) |> 
+  left_join(reading_total) |> 
+  ungroup() |> 
+  add_row(
+    age = "17-24",
+    reading_level = "Very High (10+)",
+    observed_count = 0,
+    age_total = age_total$age_total[1],
+    reading_total = reading_total$reading_total[4]
+  ) |> 
+  mutate(
+    expected_count = round((age_total*reading_total)/sum(Q7_data$count),2 ),
+    reading_level = as.factor(reading_level)) |> 
+  select(Age = age, reading_level, expected_count) |> 
+  pivot_wider(names_from = "reading_level", values_from = "expected_count") |> 
+  select(Age, None, "Low (1-5)", "High (6-10)", "Very High (10+)")|> 
+  flextable() |>
+  add_header_lines("Reading level on articles") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Expected Counts") |>
+  colformat_num(
+    na_str = "0"
+  )
+
+```
+
+```{r Q7 chi-square}
+Q7_results <- chisq_test(Q7_df, age ~ reading_level) 
+
+Q7_results |>
+  mutate(
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = scientific(p_value, digits = 3)) |> 
+  flextable() |> 
+  align(j = 4, align = "right", part = "body") |> 
+  align(j = 4, align = "right", part = "header") |>  
+  set_caption("Question 7 Results")
+```
+
+```{r Q7 post hoc}
+ages <- unique(Q1_df$age)
+
+post_hoc_list <- list()
+
+test_df <- Q7_df
+
+for (group in 2:5){
+  current_test = 1
+  data <- test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ reading_level) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 3:5){
+  current_test = 2
+  data <-  test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ reading_level) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ reading_level) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- test_df |> 
+    filter(age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ reading_level) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q7_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q7_post_hoc |> 
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = scientific(p_value, digits = 3)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", test_source))
+```
+
+
+
+## Question 9
 
 ** Would you read Grand Valley Magazine if it was offered as a WEBSITE version only?
 
+```{r Q9 data}
+Q9_df <- tibble(
+  age = rep(Q9_data$age, Q9_data$count),
+  website_only = rep(Q9_data$website_only, Q9_data$count)
+)
 
-* Question 11
+Q9_df <- Q9_df |>
+  mutate(
+    age = as.factor(age),
+    website_only = as.factor(website_only)
+  )
 
-** Multi-select cannot do chi-square
+write_csv(Q9_df, file = "~/MyR/GVM-Project/chi-square-long-data/Q9_df.csv")
+```
+
+
+```{r Q9 Observed Counts}
+Q9_data |>
+  select(Age = age, website_only, count) |>
+  pivot_wider(names_from = website_only, values_from = count) |>
+  select(Age, Yes, Unsure, No) |> 
+  flextable() |> 
+  add_header_lines(values = "Website only response") |> 
+  align(i = 1, align = "center", part = "header") |> 
+  set_caption("Observed Counts")
+```
+
+
+```{r Q9 expected counts}
+Q9_data |> 
+  mutate(expected_count = round((number_in_age_group*num_in_category)/sum(Q9_data$count), 2)) |> 
+  select(Age = age, website_only, expected_count) |> 
+  pivot_wider(names_from = "website_only", values_from = "expected_count") |> 
+  select(Age, Yes, Unsure, No) |> 
+  flextable() |> 
+  add_header_lines(values = "Website only response") |> 
+  align(i = 1, align = "center", part = "header") |> 
+  set_caption("Expected Counts")
+```
+
+
+```{r Q9 chi-square}
+Q9_results <- chisq_test(Q9_df, age ~ website_only)
+
+Q9_results |> 
+  mutate(statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001 ~ "***",
+      p_value < 0.01 ~ "**",
+      p_value < 0.05 ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = round(p_value, 6)) |> 
+  flextable() |> 
+  align(j = 4, align = "right", part = "body") |> 
+  align(j = 4, align = "right", part = "header") |> 
+  set_caption("Question 9 Results")
+```
+
+```{r Q9 posthoc}
+# ages <- unique(Q1_df$age)
+# 
+# post_hoc_list <- list()
+# 
+# Q9_df <- Q9_df |> 
+#   mutate(age = as.character(age),
+#          website_only = as.character(website_only))
+# 
+# test_df <- Q9_df
+# 
+# for (group in 2:5){
+#   current_test = 1
+#   data <- test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 3:5){
+#   current_test = 2
+#   data <-  test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 4:5){
+#   current_test = 3
+#   data <- test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 5){
+#   current_test = 4
+#   data <- test_df |> 
+#     filter(age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ website_only) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#    
+#    post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# 
+# Q9_post_hoc <- do.call(rbind, post_hoc_list) 
+# 
+# Q9_post_hoc |> 
+#   mutate(
+#     statistic = round(statistic, 4),
+#     significant = case_when(
+#       p_value < 0.001/choose(5,2) ~ "***",
+#       p_value < 0.01/choose(5,2) ~ "**",
+#       p_value < 0.05/choose(5,2) ~ "*",
+#       TRUE ~ "n.s."
+#     ),
+#     p_value = round(p_value, 6)) |> 
+#   flextable() |> 
+#   align(j = 5, align = "right", part = "body") |> 
+#   align(j = 5, align = "right", part = "header") |> 
+#   set_caption(paste0("Posthoc testing for ", "Question 9"))
+```
+
+```{r Q9 prop test}
+Q9_overall_data <- gvm_data |>
+  mutate(website_only = case_when(
+           website_only == "I don't know/I'm not sure" ~ "Unsure",
+           TRUE ~ website_only
+         )) |>
+  filter(num_articles > 0 | num_issues > 0) |> 
+  group_by(website_only) |>
+  summarize(num_in_category = n()) |> 
+  mutate(N = 909,
+         percent = (num_in_category/N)*100)
+
+Q9_df_overall <- tibble(
+  response = rep(Q9_overall_data$website_only, Q9_overall_data$num_in_category)
+)
+
+```
+

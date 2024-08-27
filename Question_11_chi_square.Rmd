@@ -1,0 +1,399 @@
+---
+title: "Grand Valley Magazine Project Chi Square Testing"
+author: "Matthew Dickinson & Foster Thorburn"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+
+# Data Import
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
+
+```{r packages, include = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(readr)
+library(flextable)
+library(tidymodels)
+```
+
+
+## Question 11
+```{r Question 11 df}
+Q11_data <- read_csv("~/MyR/GVM-Project/chi-square-testing/Q11_data.csv")
+
+Q11_df <- data.frame(
+  age = rep(Q11_data$age, Q11_data$count),
+  Action = rep(Q11_data$action, Q11_data$count)
+)
+
+write_csv(Q11_df, file = "~/MyR/GVM-Project/chi-square-long-data/Q11_df.csv")
+```
+
+```{r Q11 observed counts table}
+Q11_data |>
+  select(Age = age, Action = action, count) |>
+  pivot_wider(names_from = "Action", values_from = "count") |>
+  flextable() |>
+  add_header_lines(values = "Action") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Observed Counts") |> 
+  fit_to_width(8)
+```
+
+
+```{r Q11 expected counts table}
+Q11_data |>
+  mutate("Expected Counts" = (number_in_age_group*num_in_category)/sum(Q11_data$count)) |>
+  select(Age = age, Action = action, `Expected Counts`) |>
+  pivot_wider(names_from = "Action", values_from = `Expected Counts`) |>
+  purrr::modify_if(~is.numeric(.), ~round(., 2)) |> 
+  flextable() |>
+  add_header_lines(values = "Action") |>
+  align(i = 1, align = "center", part = "header") |>
+  set_caption("Expected Counts") |> 
+  fit_to_width(8)
+```
+
+```{r Q11 chi-square}
+Q11_cols <- Q11_df |> select(Action) |> distinct() |> as.vector() |> unlist()
+
+data_list <- list()
+
+for (method in Q11_cols){
+  dat <- Q11_df |>
+    filter(Action == method) |>
+    chisq_test(age ~ Action) 
+  data_list[[method]] <- dat
+}
+
+Q11_results <- do.call(rbind, data_list) 
+
+Q11_results <- cbind(Action = rownames(Q11_results), Q11_results)
+
+Q11_results |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = scientific(p_value, digits = 3)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption("What actions have you taken as a result of reading the Grand Valley Magazine?")
+```
+
+* Shared article (both)
+
+```{r posthoc shared article - email}
+ages <- unique(Q11_df$age)
+
+post_hoc_list <- list()
+
+test_source <- "Shared Article - Email"
+
+test_df <- Q11_df
+
+test_var <- "Action"
+
+
+for (group in 2:5){
+  current_test = 1
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+for (group in 3:5){
+  current_test = 2
+  data <-  test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q11_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q11_post_hoc |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = round(p_value, 6)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", test_source)) 
+
+```
+
+```{r posthoc shared article - social media CONDITIONS NOT MET}
+# ages <- unique(Q11_df$age)
+# 
+# post_hoc_list <- list()
+# 
+# test_source <- "Shared Article - Social Media"
+# 
+# test_df <- Q11_df
+# 
+# test_var <- "Action"
+# 
+# 
+# for (group in 2:5){
+#   current_test = 1
+#   data <- test_df |> 
+#     filter(Action == test_source &
+#              age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ Action) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# 
+# for (group in 3:5){
+#   current_test = 2
+#   data <-  test_df |> 
+#     filter(Action == test_source &
+#              age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ Action) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 4:5){
+#   current_test = 3
+#   data <- test_df |> 
+#     filter(Action == test_source &
+#              age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ Action) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#   
+#   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# for (group in 5){
+#   current_test = 4
+#   data <- test_df |> 
+#     filter(Action == test_source &
+#              age %in% c(ages[current_test], ages[group])) |> 
+#     chisq_test(age ~ Action) |> 
+#     mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+#    
+#    post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+# }
+# 
+# 
+# Q1_post_hoc <- do.call(rbind, post_hoc_list) 
+# 
+# Q1_post_hoc |>
+#   mutate(
+#     statistic = round(statistic, 4),
+#     significant = case_when(
+#       p_value < 0.001/choose(5,2) ~ "***",
+#       p_value < 0.01/choose(5,2) ~ "**",
+#       p_value < 0.05/choose(5,2) ~ "*",
+#       TRUE ~ "n.s."
+#     ),
+#     p_value = round(p_value, 6)) |> 
+#   flextable() |> 
+#   align(j = 5, align = "right", part = "body") |> 
+#   align(j = 5, align = "right", part = "header") |> 
+#   set_caption(paste0("Posthoc testing for ", test_source))
+
+```
+
+* visited website
+```{r posthoc visisted website}
+ages <- unique(Q11_df$age)
+
+post_hoc_list <- list()
+
+test_source <- "Visited Website"
+
+test_df <- Q11_df
+
+test_var <- "Action"
+
+
+for (group in 2:5){
+  current_test = 1
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+for (group in 3:5){
+  current_test = 2
+  data <-  test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q1_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q1_post_hoc |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."
+    ),
+    p_value = round(p_value, 6)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", test_source)) 
+```
+
+```{r posthoc Saved Article}
+ages <- unique(Q11_df$age)
+
+post_hoc_list <- list()
+
+test_source <- "Saved Article"
+
+test_df <- Q11_df
+
+test_var <- "Action"
+
+
+for (group in 2:5){
+  current_test = 1
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1) 
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+for (group in 3:5){
+  current_test = 2
+  data <-  test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 4:5){
+  current_test = 3
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+  
+  post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+for (group in 5){
+  current_test = 4
+  data <- test_df |> 
+    filter(Action == test_source &
+             age %in% c(ages[current_test], ages[group])) |> 
+    chisq_test(age ~ Action) |> 
+    mutate(test_between = paste0(ages[current_test], " and ", ages[group]), .before = 1)
+   
+   post_hoc_list[[paste0(ages[current_test], " and ", ages[group])]] <- data
+}
+
+
+Q11_post_hoc <- do.call(rbind, post_hoc_list) 
+
+Q11_post_hoc |>
+  mutate(
+    statistic = round(statistic, 4),
+    significant = case_when(
+      p_value < 0.001/choose(5,2) ~ "***",
+      p_value < 0.01/choose(5,2) ~ "**",
+      p_value < 0.05/choose(5,2) ~ "*",
+      TRUE ~ "n.s."),
+    p_value = scientific(p_value, digits = 3)) |> 
+  flextable() |> 
+  align(j = 5, align = "right", part = "body") |> 
+  align(j = 5, align = "right", part = "header") |> 
+  set_caption(paste0("Posthoc testing for ", test_source))
+  
+```
+

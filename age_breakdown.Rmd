@@ -118,7 +118,7 @@ Q1_data <- gvm_data |>
 
 
 ```{r Question 1 by category}
-Q1_plot_original <- Q1_data |>
+Q1_plot <- Q1_data |>
   ggplot(aes(fct_reorder(location, (num_in_category)), category_percent, fill = forcats::fct_rev(age))) +
   geom_col(position = "dodge", color = "black", linewidth = .1) +
   coord_flip() +
@@ -127,30 +127,7 @@ Q1_plot_original <- Q1_data |>
     expand = expansion(mult = c(0, 0.1)),
     breaks = seq(0, 40, 5)) +
   labs(
-    x = "Location",
-    y = "Percent",
-    title = "Where do you acquire most of your information about GV?",
-    fill = "Age Group"
-  ) +
-  theme_default +
-  theme(panel.grid.major.y = element_blank(),
-        panel.grid.major.x = element_line()) +
-  guides(fill = guide_legend(reverse=TRUE))
-
-print(Q1_plot_original)
-```
-
-```{r Question 1 by age}
-Q1_plot<- Q1_data |>
-  ggplot(aes(fct_reorder(location, (num_in_category)), age_percent, fill = forcats::fct_rev(age))) +
-  geom_col(position = "dodge", color = "black", linewidth = .1) +
-  coord_flip() +
-  scale_fill_viridis_d() +
-  scale_y_continuous(
-    expand = expansion(mult = c(0, 0.1)),
-    breaks = seq(0, 80, 10)) +
-  labs(
-    x = "Location",
+    x = "Source",
     y = "Percent",
     title = "Where do you acquire most of your information about GV?",
     fill = "Age Group"
@@ -163,32 +140,92 @@ Q1_plot<- Q1_data |>
 print(Q1_plot)
 ```
 
+```{r Question 1 by age}
+Q1_plot_age<- Q1_data |>
+  ggplot(aes(fct_reorder(location, (num_in_category)), age_percent, fill = forcats::fct_rev(age))) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.1)),
+    breaks = seq(0, 80, 10)) +
+  labs(
+    x = "Source",
+    y = "Percent",
+    title = "Where do you acquire most of your information about GV?",
+    fill = "Age Group"
+  ) +
+  theme_default +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line()) +
+  guides(fill = guide_legend(reverse=TRUE))
 
-```{r Question 1 table}
-Q1_data |>
-  select(age, location, category_percent) |>
-  mutate(category_percent = round(category_percent, 2)) |>
-  pivot_wider(names_from = "location", values_from = "category_percent") |>
-  flextable()
+print(Q1_plot_age)
+```
 
-Q1_data |>
-  select(age, location, age_percent) |>
-  mutate(age_percent = round(age_percent, 2)) |>
-  pivot_wider(names_from = "location", values_from = "age_percent") |>
-  flextable()
+
+```{r Question 1 tables}
+# Q1_data |>
+#   select(age, location, category_percent) |>
+#   mutate(category_percent = round(category_percent, 2)) |>
+#   pivot_wider(names_from = "location", values_from = "category_percent") |>
+#   flextable()
+# 
+# Q1_data |>
+#   select(age, location, age_percent) |>
+#   mutate(age_percent = round(age_percent, 2)) |>
+#   pivot_wider(names_from = "location", values_from = "age_percent") |>
+#   flextable()
 ```
 
 
 Here are the counts per each category for Question 1.
 ```{r Question 1 counts}
 tab_q1 <- Q1_numbers |> 
-  rename(Location = location, "Count in category" = num_in_category) |> 
+  rename(Source = location, "Count in category" = num_in_category) |> 
   flextable() |>
   width(
-    j = "Location",
+    j = "Source",
     width = 1.5)
 
 tab_q1
+```
+
+```{r Q1 plot zoom}
+Q1_plot_zoom <- Q1_data |>
+  filter((location %in% c("GVM Print", "GVM Website", "Word of Mouth"))) |> 
+  mutate(location = factor(location, levels = c("GVM Print", "GVM Website", "Word of Mouth"))) |> 
+  ggplot(aes(location, category_percent, fill = age)) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  scale_fill_viridis_d(direction = -1) +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.1)),
+    breaks = seq(0, 40, 5)) +
+  labs(
+    x = "Source",
+    y = "Percent",
+    title = "Where do you acquire most of your information about GV?",
+    fill = "Age Group"
+  ) +
+  theme_default +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line()) +
+  guides(fill = guide_legend(reverse=FALSE))
+
+
+ggsave(
+    filename="Q1_plot_zoom.svg",
+    plot=Q1_plot_zoom,
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+  
+  ggsave(
+    filename="Q1_plot_zoom.png",
+    plot=Q1_plot_zoom,
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
 ```
 
 
@@ -232,22 +269,22 @@ print(Q3_plot_original)
 
 
 ```{r Question 3 plot per age}
-Q3_plot_age <- Q3_data |>
-  ggplot(aes((num_issues), age_percent, fill = age)) +
-  geom_col(position = "dodge", color = "black", linewidth = .1) +
-  scale_fill_viridis_d(direction = -1) +
-  scale_y_continuous(
-    expand = expansion(mult = c(0, 0.05)),
-    breaks = seq(0, 70, 10)) +
-  labs(
-    x = "Number of Issues",
-    y = "Percent",
-    fill = "Age Group",
-    title = "How many PRINT issues have you read within the last year?"
-  ) + 
-  theme_default
-
-print(Q3_plot_age)
+# Q3_plot_age <- Q3_data |>
+#   ggplot(aes((num_issues), age_percent, fill = age)) +
+#   geom_col(position = "dodge", color = "black", linewidth = .1) +
+#   scale_fill_viridis_d(direction = -1) +
+#   scale_y_continuous(
+#     expand = expansion(mult = c(0, 0.05)),
+#     breaks = seq(0, 70, 10)) +
+#   labs(
+#     x = "Number of Issues",
+#     y = "Percent",
+#     fill = "Age Group",
+#     title = "How many PRINT issues have you read within the last year?"
+#   ) + 
+#   theme_default
+# 
+# print(Q3_plot_age)
 ```
 
 ```{r Question 3 plot faceted age USING}
@@ -432,18 +469,6 @@ Q7_data <- gvm_data |>
     count = c(0, 0, 0),
     number_in_age_group = rep(age_group_nums$number_in_age_group[2], 3),
     num_in_category = c(1, 1, 1)) |>
-  add_row(
-    age = c("36-49"),
-    num_articles = c(9),
-    count = c(0),
-    number_in_age_group = rep(age_group_nums$number_in_age_group[3], 1),
-    num_in_category = c(1)) |>
-  add_row(
-    age = c("66+"),
-    num_articles = c(9),
-    count = c(0),
-    number_in_age_group = rep(age_group_nums$number_in_age_group[5], 1),
-    num_in_category = c(1)) |>
   mutate(
     age_percent = (count/number_in_age_group)*100,
     articles_percent = (count/num_in_category)*100) |>
@@ -507,10 +532,54 @@ print(Q7_plot)
 ```
 
 ```{r Question 7 boxplot}
-gvm_data |>
-  filter(!(num_articles == 15)) |>
-  ggplot(aes(age, num_articles, fill = age)) +
-  geom_boxplot()
+Q7_df <- read_csv("~/MyR/GVM-Project/chi-square-long-data/Q7_df.csv")
+
+category_counts <- Q7_df |> 
+  group_by(reading_level) |> 
+  summarize(category_num = n())
+
+
+age_counts <- Q7_df |> 
+  group_by(age) |> 
+  summarize(age_num = n())
+
+Q7_data_new <- Q7_df |> 
+  group_by(age, reading_level) |> 
+  summarize(observed = n()) |> 
+  ungroup() |> 
+  add_row(
+    age = "17-24",
+    reading_level = "Very High (10+)",
+    observed = 0,
+    .after = 3) |> 
+  left_join(category_counts) |> 
+  left_join(age_counts) |> 
+  mutate(category_percent = (observed/category_num)*100,
+         age_percent = (observed/age_num)*100)
+
+Q7_data_new$reading_level <- factor(Q7_data_new$reading_level, c("None", "Low (1-5)", "High (6-10)", "Very High (10+)"))
+
+Q7_plot <- Q7_data_new |> 
+  ggplot(aes(as.factor(reading_level), age_percent, fill = as.factor(reading_level))) +
+  geom_col(position = "dodge", color = "black") +
+  scale_fill_viridis_d() +
+  scale_y_continuous(
+    expand = expansion(mult = c(0, 0.05)),
+    breaks = seq(0, 100, 10)) +
+  labs(
+    x = "Number of Articles",
+    y = "Percent",
+    fill = "Reading Amount",
+    title = "How many articles have you read on the Grand Valley Magazine \nWEBSITE in the last year?"
+  ) +
+  theme_default +
+  theme(axis.title.x = element_blank(),
+        legend.position = "bottom",
+        axis.text.x = element_blank()) +
+  facet_grid(~age, 
+    labeller = labeller(age = ages))
+
+Q7_plot
 ```
 
 
@@ -540,14 +609,21 @@ Q9_numbers <- gvm_data |>
            website_only == "I don't know/I'm not sure" ~ "Unsure",
            TRUE ~ website_only
          )) |>
+  filter(num_articles > 0 | num_issues > 0) |> 
   group_by(website_only) |>
   summarize(num_in_category = n())
+
+Q9_ages <- gvm_data |> 
+  filter(num_articles > 0 | num_issues > 0) |> 
+  group_by(age) |>
+  summarize(number_in_age_group = n())
   
 Q9_data <- gvm_data |>
+  filter(num_articles > 0 | num_issues > 0) |> 
   select(age, website_only) |>
   group_by(age, website_only) |>
   summarize(count = n()) |>
-  left_join(age_group_nums) |>
+  left_join(Q9_ages) |>
   mutate(age_percent = (count/number_in_age_group)*100,
          website_only = case_when(
            website_only == "I don't know/I'm not sure" ~ "Unsure",
@@ -555,6 +631,16 @@ Q9_data <- gvm_data |>
          )) |>
   left_join(Q9_numbers) |>
   mutate(category_percent = (count/num_in_category)*100)
+
+
+ages_Q9 <- c(paste0("17-24 (n=", Q9_ages$number_in_age_group[1], ")"),
+        paste0("25-35 (n=", Q9_ages$number_in_age_group[2], ")"),
+        paste0("36-49 (n=", Q9_ages$number_in_age_group[3], ")"),
+        paste0("50-65 (n=", Q9_ages$number_in_age_group[4], ")"),
+        paste0("66+ (n=", Q9_ages$number_in_age_group[5], ")"))
+
+names(ages_Q9) <- c("17-24", "25-35", "36-49", "50-65", "66+")
+
 ```
 
 
@@ -567,15 +653,17 @@ Q9_plot <- Q9_data |>
   labs(
     y = "Percent",
     fill = "Response",
-    title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?"
+    title = "Would you read Grand Valley Magazine if it was offered as a WEBSITE \nversion only?",
+    caption = "Among those who have read at least 1 article or issue"
   ) +
   theme(
     axis.title.x = element_blank(),
     axis.text.x = element_blank(),
-    legend.position = "bottom") +
+    legend.position = "bottom",
+    plot.caption = element_text(hjust = .5)) +
   facet_grid(
     ~age, 
-    labeller = labeller(age = ages)) +
+    labeller = labeller(age = ages_Q9)) +
   theme_default
 
 # five by three chi-square test
@@ -585,6 +673,53 @@ Q9_plot <- Q9_data |>
 
 print(Q9_plot)
 # make the border slightly thicker
+```
+
+```{r Q9 overall}
+Q9_overall_data <- gvm_data |>
+  mutate(website_only = case_when(
+           website_only == "I don't know/I'm not sure" ~ "Unsure",
+           TRUE ~ website_only
+         )) |>
+  filter(num_articles > 0 | num_issues > 0) |> 
+  group_by(website_only) |>
+  summarize(num_in_category = n()) |> 
+  mutate(total = 909,
+         percent = (num_in_category/total)*100) 
+
+
+Q9_overall_plot <- Q9_overall_data |> 
+  ggplot(aes(forcats::fct_rev(as.factor(website_only)), percent, fill = forcats::fct_rev(website_only))) +
+  geom_col(position = "dodge", color = "black", linewidth = .3) +
+  scale_fill_colorblind() +
+  scale_y_continuous(expand = expansion(mult = c(0, .05))) + theme_default +
+  labs(
+    x = "",
+    y = "Percent",
+    title = "Would you read Grand Valley Magazine if it was online only?",
+    fill = "Response",
+    caption = "Among those who have read at least 1 issue or article"
+  ) +
+  theme(
+    legend.position = "bottom",
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    plot.caption = element_text(hjust = .5)
+  ) 
+
+ggsave(
+    filename="Q9_overall.svg",
+    plot=Q9_overall_plot,
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+  
+ggsave(
+    filename="Q9_overall.png",
+    plot=Q9_overall_plot,
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
 ```
 
 
@@ -601,7 +736,6 @@ tab_q9 <- Q9_numbers |>
 
 tab_q9
 ```
-
 
 
 
@@ -678,6 +812,46 @@ tab_q11
 ```
 
 
+```{r Q11 plot zoom in}
+Q11_plot_zoom <- Q11_data |>
+  filter(action %in% c("Saved Article", "Shared Article - Email", "Visited Website")) |>
+  mutate(action = str_replace_all(action, " Article -", " -"),
+    action = factor(action, levels = c( "Shared - Email",  "Saved Article", "Visited Website"))
+    ) |> 
+  ggplot(aes(action, category_percent, fill = age)) +
+  geom_col(position = "dodge", color = "black", linewidth = .1) +
+  scale_y_continuous(
+    expand = expansion(mult=c(0, 0.12)),
+    breaks = seq(0, 50, 5)) +
+  scale_fill_viridis_d(direction = -1) +
+  labs(
+    x = "Action",
+    y = "Percent",
+    fill = "Age Group",
+    title = "What actions have you taken as a result of reading the \nGrand Valley Magazine?"
+  ) +
+  theme_default +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line()) +
+  guides(fill = guide_legend(reverse=FALSE))
+
+
+ggsave(
+    filename="Q11_plot_zoom.svg",
+    plot=Q11_plot_zoom,
+    device="svg",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+  
+  ggsave(
+    filename="Q11_plot_zoom.png",
+    plot=Q11_plot_zoom,
+    device="png",
+    path="~/MyR/GVM-Project/plots",
+    width=7, height=5, units="in")
+```
+
+
 # Exporting plots and tables
 ```{r exporting plots, warning = FALSE}
 plot_list <- list(Q1_plot, Q3_plot, Q5_plot, Q7_plot, Q9_plot, Q11_plot)
@@ -745,10 +919,36 @@ save_as_image(
 )
 ```
 
+
+```{r saving tables as csv, message = FALSE, warning = FALSE, include = FALSE}
+data_tables <- list(Q1_data, Q3_data, Q5_data, Q7_data, Q9_data, Q11_data)
+
+for (i in seq_along(data_tables)){
+
+  table_num = seq(1, 12, 2)[i]
+
+  table_name = paste0("Q", table_num, "_data")
+  
+  path = paste0("~/MyR/GVM-Project/chi-square-testing/", table_name, ".csv")
+
+  write_csv(
+    data_tables[[i]],
+    file = path
+  )
+  
+  # print(table_num)
+  # print(table_name)
+  
+  
+}
+```
+
 ```{r fake success table for pdf version}
 data.frame(
   Plot = c("Question 1", "Question 3", "Question 5", "Question 7", "Question 9", "Question 11"),
   Status = rep("Export Successful", 6)
 ) |> flextable(cwidth = 1.5)
 ```
+
+
 
