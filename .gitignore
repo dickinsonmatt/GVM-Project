@@ -2,5 +2,4 @@
 .Rhistory
 .RData
 .Ruserdata
-GVM_data.csv
-STA 419 GV Magazine Survey.csv
+*.csv
